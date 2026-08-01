@@ -56,6 +56,7 @@ class HelloTriangleApplication {
             createInstance(); // Initialize Vulkan instance in memory. Allows devs to interact with the Vulkan API
             setupDebugMessenger(); // Set up the debug messages (if running in debug mode)
             pickPhysicalDevice(); // Pick the graphics card we're running on
+            createLogicalDevice(); // Create a logical device that will allow the application to interface with the physical device
         }
 
         void createInstance() {
@@ -251,7 +252,7 @@ class HelloTriangleApplication {
             
             // STEP #5 (Custom check not in tutorial) Check that device is a dedicated GPU
             // Note; this normally isn't a smart binary check, because some computers don't have dedicated GPU hardware. This limits
-            // how many machines this code can run on. HOWEVER; since this is a tutorial, I'm doing this to force a run against my GPU
+            // how many machines this code can run on. HOWEVER; since this is a tutorial, I'm doing this to force a run against my machine's GPU
             bool meetsGPURequirement = true;
             if (PREFER_DEDICATED_GPU) { // Constant defined at the top for easy shutoff
                 meetsGPURequirement = (physicalDeviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu);
@@ -259,6 +260,65 @@ class HelloTriangleApplication {
 
             // STEP #6: Return the device's compatibility
             return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures && meetsGPURequirement;
+        }
+
+        void createLogicalDevice() {
+
+            // STEP #1: Get the physical device's queue info and find the first one that supports graphics
+            std::vector<vk::QueueFamilyProperties> queueFamilyPropeties = physicalDevice.getQueueFamilyProperties();
+            auto graphicsQueueFamilyProperty = std::ranges::find_if(
+                queueFamilyPropeties,
+                [](auto const &qfp) {
+                    return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); // Does this queue family have a graphics bit set?
+                }
+            );
+            auto graphicsIndex = static_cast<uint32_t>(
+                std::distance(
+                    queueFamilyPropeties.begin(),
+                    graphicsQueueFamilyProperty
+                )
+            );
+
+            // STEP #2: Set the priority of the chosen queue (help the GPU decide which command in the buffer should run first)
+            // Takes a float between 0.0 and 1.0
+            float queuePriority = 0.5f;
+
+            // STEP #3: Create the info for the queue that will be passed to the Vulkan instance
+            vk::DeviceQueueCreateInfo deviceQueueCreateInfo {
+                .queueFamilyIndex = graphicsIndex,
+                .queueCount = 1,
+                .pQueuePriorities = &queuePriority
+            };
+
+            // STEP #4: Specify the set of device features that will be used (come back later)
+            vk::PhysicalDeviceFeatures deviceFeatures;
+            
+            // STEP #5: Enable the device's access to Vulkan 13 features and lower using structure chaining (basically a linked list)
+            // Only Vulkan 1.0 features are enabled by default for backwards compat;
+            // using newer features requires explicit opt-in
+            vk::StructureChain<
+                vk::PhysicalDeviceFeatures2,
+                vk::PhysicalDeviceVulkan11Features,
+                vk::PhysicalDeviceVulkan13Features,
+                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+            > featureChain = {
+                {},                                 // vk::PhysicalDevicesFeatures2 (empty; come back later)
+                {.shaderDrawParameters = true},     // Enable shader draw parameters from Vulkan 1.1
+                {.dynamicRendering = true},         // Enable dynamic rendering from Vulkan 1.3 (i.e., no VkFrameBuffer object)
+                {.extendedDynamicState = true}      // Enable extended dynamic state from the extension; lets us change specific pipeline settings on the fly during execution
+            };
+
+            // STEP #6: Create the logical device and graphics queue
+            vk::DeviceCreateInfo deviceCreateInfo{
+                .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(), // Provide a pointer to the first element of the structure chain; Vulkan is smart enough to traverse the structure chain itself
+                .queueCreateInfoCount = 1,
+                .pQueueCreateInfos = &deviceQueueCreateInfo,
+                .enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size()),
+                .ppEnabledExtensionNames = requiredDeviceExtensions.data()
+            };
+
+            device = vk::raii::Device(physicalDevice, deviceCreateInfo);
+            graphicsQueue = vk::raii::Queue(device, graphicsIndex, 0);
         }
 
 
@@ -278,9 +338,11 @@ class HelloTriangleApplication {
     private:
         GLFWwindow *window = nullptr; // Pointer to the window object's place in memory
         vk::raii::Context context;
-        vk::raii::Instance instance = nullptr;
+        vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Add a class member for the debug messenger handle
-        vk::raii::PhysicalDevice  physicalDevice = nullptr;
+        vk::raii::PhysicalDevice  physicalDevice = nullptr; // The hardware the program is running against
+        vk::raii::Device device = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
+        vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
 
 };
 
