@@ -44,8 +44,10 @@ class HelloTriangleApplication {
 
         }
 
+
         void initVulkan() {
             createInstance(); // Initialize Vulkan instance in memory. Allows devs to interact with the Vulkan API
+            setupDebugMessenger(); // Set up the debug messages (if running in debug mode)
         }
 
         void createInstance() {
@@ -124,14 +126,56 @@ class HelloTriangleApplication {
 
             std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount); // The unpacked list of all glfw extensions
 
+            if (enableValidationLayers) { // If validation layers are enabled, include the debug messenger extension as required
+                extensions.push_back(vk::EXTDebugUtilsExtensionName);
+            }
+
             return extensions;
         }
+
+        static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
+            vk::DebugUtilsMessageSeverityFlagBitsEXT severity, // Severity level of the message
+            vk::DebugUtilsMessageTypeFlagsEXT type, // Type of debug message
+            const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, // A pointer to the debug message
+            void *pUserData // nullptr; not applicable for this implementation. would contain a pointer to custom data I provide
+        ) {
+            std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl; // Send the debug message over to the debug messenger
+
+            return vk::False;
+        }
+
+        void setupDebugMessenger() {
+            if (!enableValidationLayers) return; // Checks if we're in debug mode or not
+
+            vk::DebugUtilsMessageSeverityFlagsEXT severityFlags( // How severe is the message? Only output debug messages for warning or above. Can add eVerbose and eInfo to increase error output.
+                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+            );
+
+            vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags( // What type of message is it? Enabling all three for right now
+                vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | 
+                vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+                vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+            );
+
+            vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT{ // Create the info block, including a pointer to the callback function to run with this info when a debug message event occurs
+                .messageSeverity = severityFlags,
+                .messageType = messageTypeFlags,
+                .pfnUserCallback = &debugCallback
+            };
+
+            debugMessenger = instance.createDebugUtilsMessengerEXT( // Attach the debug messenger to read the output of the created vulkan instance
+                debugUtilsMessengerCreateInfoEXT
+            );
+        }
+
 
         void mainLoop() {
             while (!glfwWindowShouldClose(window)) { // Keeps window from auto-closing on startup
                 glfwPollEvents();
             }
         }
+
 
         void cleanup() {
             glfwDestroyWindow(window); // C++; need to always free what you allocate
@@ -143,6 +187,7 @@ class HelloTriangleApplication {
         GLFWwindow *window = nullptr; // Pointer to the window object's place in memory
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr;
+        vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Add a class member for the debug messenger handle
 
 };
 
