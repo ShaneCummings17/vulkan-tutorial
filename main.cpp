@@ -10,12 +10,19 @@
 // Constants
 constexpr uint32_t WIDTH = 800; // Window width
 constexpr uint32_t HEIGHT = 600; // Window height
+constexpr bool PREFER_DEDICATED_GPU = true;
 
-
-// Validation layers; aka hooks into vulkan function calls that add validation logic
+// Required Validation Layers
+// aka hooks into vulkan function calls that add validation logic
 const std::vector<char const*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
+
+// Required Device Extensions
+const std::vector<const char*> requiredDeviceExtensions = {
+    vk::KHRSwapchainExtensionName
+};
+
 
 #ifdef NDEBUG // Only enable validation layers if running in debug mode; production release has them disabled to remove unnecessary overhead
 constexpr bool enableValidationLayers = false;
@@ -48,6 +55,7 @@ class HelloTriangleApplication {
         void initVulkan() {
             createInstance(); // Initialize Vulkan instance in memory. Allows devs to interact with the Vulkan API
             setupDebugMessenger(); // Set up the debug messages (if running in debug mode)
+            pickPhysicalDevice(); // Pick the graphics card we're running on
         }
 
         void createInstance() {
@@ -169,6 +177,90 @@ class HelloTriangleApplication {
             );
         }
 
+        void pickPhysicalDevice() { // What is the graphics card should Vulkan use?
+
+            // Get all graphics cards on the system
+            auto physicalDevices = instance.enumeratePhysicalDevices();
+            if (physicalDevices.empty()) { // If nothing supports Vulkan, end the execution
+                throw std::runtime_error("failed to find GPUs with Vulkan support!");
+            }
+
+            // Check each graphics card and see if it is suitable. It may support Vulkan generally, but can it do everything we want it to?
+            auto const devIter = std::ranges::find_if( // Iterate over every element in physicalDevices, and run isDeviceSuitable against it with a lambda function
+                physicalDevices,
+                [&](auto const &physicalDevice) {
+                    return isDeviceSuitable(physicalDevice);
+                }
+            );
+            
+            // Exit program if a suitable device is not found
+            if (devIter == physicalDevices.end()) {
+                throw std::runtime_error("failed to find a suitable GPU!");
+            };
+            
+            // Otherwise, pick the the first suitable device found
+            physicalDevice = *devIter;
+            
+            // Print the chosen device to stdout
+            std::cout << "Selected Physical Device: " << physicalDevice.getProperties().deviceName << std::endl;
+        }
+        
+        // Test each device to confirm suitability
+        bool isDeviceSuitable(vk::raii::PhysicalDevice const &physicalDevice) {
+
+            auto physicalDeviceProperties = physicalDevice.getProperties(); // Avoid duplicate function calls; saves a CPU cycle
+
+            // STEP #1: Does the device support Vulkan 13 and up?
+            bool supportsVulkan1_3 = physicalDeviceProperties.apiVersion >= vk::ApiVersion13;
+
+            // STEP #2: Does the device support graphics queue commands?
+            auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+            bool supportsGraphics = std::ranges::any_of(
+                queueFamilies, 
+                [](auto const &qfp) {
+                    return static_cast<bool>(qfp.queueFlags & vk::QueueFlagBits::eGraphics); // Bitwise check that the queueFlags matches the eGraphics bits for any of the queue families
+                }
+            );
+
+            // STEP #3: Does the device support all of our required device extensions?
+            // Note; DEVICE extensions and INSTANCE extensions are different. that's why we have a separate function for checking instance extensions, and are checking device extensions here.
+            auto availableDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+            bool supportsAllRequiredExtensions = std::ranges::all_of(
+                requiredDeviceExtensions,
+                [&availableDeviceExtensions](auto const &requiredDeviceExtension) {
+                    return std::ranges::any_of(
+                        availableDeviceExtensions,
+                        [requiredDeviceExtension](auto const &availableDeviceExtension) {
+                            return strcmp(availableDeviceExtension.extensionName, requiredDeviceExtension) == 0;
+                        }
+                    );
+                }
+            );
+
+            // STEP #4: Does the device support all of our required features?
+            auto features = physicalDevice.template getFeatures2<
+                vk::PhysicalDeviceFeatures2,
+                vk::PhysicalDeviceVulkan11Features,
+                vk::PhysicalDeviceVulkan13Features,
+                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+            >();
+            bool supportsRequiredFeatures =
+                features.template get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters &&
+                features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
+                features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+            
+            // STEP #5 (Custom check not in tutorial) Check that device is a dedicated GPU
+            // Note; this normally isn't a smart binary check, because some computers don't have dedicated GPU hardware. This limits
+            // how many machines this code can run on. HOWEVER; since this is a tutorial, I'm doing this to force a run against my GPU
+            bool meetsGPURequirement = true;
+            if (PREFER_DEDICATED_GPU) { // Constant defined at the top for easy shutoff
+                meetsGPURequirement = (physicalDeviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu);
+            }
+
+            // STEP #6: Return the device's compatibility
+            return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures && meetsGPURequirement;
+        }
+
 
         void mainLoop() {
             while (!glfwWindowShouldClose(window)) { // Keeps window from auto-closing on startup
@@ -188,6 +280,7 @@ class HelloTriangleApplication {
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr;
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Add a class member for the debug messenger handle
+        vk::raii::PhysicalDevice  physicalDevice = nullptr;
 
 };
 
@@ -196,16 +289,16 @@ class HelloTriangleApplication {
 int main() {
     // Output if a debug or release build
     #ifdef NDEBUG
-        std::cout << "Release build.\n";
+        std::cout << "Release build!\n";
     #else
-        std::cout << "Debug build.\n";
+        std::cout << "Debug build!\n";
     #endif
 
     // Start up the application
     try {
         HelloTriangleApplication app;
         app.run();
-    } catch (const std::exception& e) { // Throw exception upon failure
+    } catch (const std::exception& e) { // Print exception upon failure
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
