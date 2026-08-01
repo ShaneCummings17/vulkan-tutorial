@@ -1,4 +1,5 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define GLFW_INCLUDE_VULKAN
 #include <vulkan/vulkan_raii.hpp>
 #include <GLFW/glfw3.h>
 
@@ -10,6 +11,18 @@
 constexpr uint32_t WIDTH = 800; // Window width
 constexpr uint32_t HEIGHT = 600; // Window height
 
+
+// Validation layers; aka hooks into vulkan function calls that add validation logic
+const std::vector<char const*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG // Only enable validation layers if running in debug mode; production release has them disabled to remove unnecessary overhead
+constexpr bool enableValidationLayers = false;
+#else
+constexpr bool enableValidationLayers = true;
+#endif
+
 // The meat and potatoes
 class HelloTriangleApplication {
     public:
@@ -19,6 +32,7 @@ class HelloTriangleApplication {
             mainLoop();
             cleanup();
         }
+
 
     private:
         void initWindow() {
@@ -35,7 +49,8 @@ class HelloTriangleApplication {
         }
 
         void createInstance() {
-            constexpr vk::ApplicationInfo appInfo{ // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
+             // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
+            constexpr vk::ApplicationInfo appInfo{
                 .pApplicationName = "Hello Triangle",
                 .applicationVersion = vk::makeVersion(1, 0, 0),
                 .pEngineName = "No Engine",
@@ -43,33 +58,73 @@ class HelloTriangleApplication {
                 .apiVersion = vk::ApiVersion14
             };
 
+            // Get the required validation layers; if enabled, creates a copy of the validationLayers object
+            std::vector<char const*> requiredLayers;
+            if (enableValidationLayers) {
+                requiredLayers.assign(validationLayers.begin(), validationLayers.end());
+            }
+
+            // Check if the required layers are supported by the Vulkan implementation
+            auto layerProperties = context.enumerateInstanceLayerProperties(); // Get all available global Vulkan layers on host system
+            auto unsupportedLayerIt = std::ranges::find_if( // Search through requiredLayers for the first item that matches the condition; the condition being, does it find a layer that isn't present on the host system?
+                requiredLayers,
+                [&layerProperties](auto const &requiredLayer) {
+                    return std::ranges::none_of( // Is there no element in layerProperties that matches requiredLayer?
+                        layerProperties,
+                        [requiredLayer](auto const &layerProperty) {
+                            return strcmp(layerProperty.layerName, requiredLayer) == 0;
+                        }
+                    );
+                }
+            );
+
+            if (unsupportedLayerIt != requiredLayers.end()) { // If literally any layer was found that is not available, throw a runtime error
+                throw std::runtime_error("Required layer not supported!");
+            };
+
+            // Get the required extensions
+            auto requiredExtensions = getRequiredInstanceExtensions();
+
+            // Check if the required extensions are supported by the Vulkan implementation
+            auto extensionProperties = context.enumerateInstanceExtensionProperties(); // Get all extensions supported by Vulkan; returns a struct
+            auto unsupportedPropertyIt = std::ranges::find_if( // Search through requiredExtensions for the first item that matches the condition; the condition being, does it find a property that isn't present on the host system?
+                requiredExtensions,
+                [&extensionProperties](auto const &requiredExtension) {
+                    return std::ranges::none_of( // Is there no element in extensionProperties that matches requiredExtension?
+                        extensionProperties,
+                        [requiredExtension](auto const &extensionProperty) {
+                            return strcmp(extensionProperty.extensionName, requiredExtension) == 0;
+                        }
+                    );
+                }
+            );
+            
+            if (unsupportedPropertyIt != requiredExtensions.end()) {
+                throw std::runtime_error("Required extension not supported" + std::string(*unsupportedPropertyIt));
+            };
+            
+            vk::InstanceCreateInfo createInfo{ // Tells Vulkan driver which global extensions and validation layers we want to use (apply to entire program, not a specific device)
+                .pApplicationInfo = &appInfo,
+                .enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
+                .ppEnabledLayerNames = requiredLayers.data(),
+                .enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
+                .ppEnabledExtensionNames = requiredExtensions.data()
+            };
+
+
+            // Finally create the damn Vulkan instance; when it goes out of scope, the object will be deconstructed and free memory (RAII -- aka the point of C++/Vulkan HPP)
+            instance = vk::raii::Instance(context, createInfo);
+
+        }
+
+        std::vector<const char*> getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
             // Get the required global instance extensions from GLFW; basically tell Vulkan how to interface w/glfw on the OS the binary is running on
             uint32_t glfwExtensionCount = 0;
             auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-            // Check if the required GLFW extensions are supported by the Vulkan implementation
-            auto extensionProperties = context.enumerateInstanceExtensionProperties(); // Get all extensions supported by Vulkan; returns a struct
-            for (uint32_t i = 0; i < glfwExtensionCount; ++i) { // For every extension glfw needs...
-                if (std::ranges::none_of( // Do literally none of these extensions match the ones supported by Vulkan?
-                    extensionProperties,
-                    [glfwExtension = glfwExtensions[i]](auto const& extensionProperty)
-                    { return strcmp(extensionProperty.extensionName, glfwExtension) == 0; } // Get the name of the extension; compare to the required extensios
-                ))
-                { // If none match, throw an error. The Vulkan API can't open a window on this operating system!
-                    throw std::runtime_error("Required GLFW extension not supported: " + std::string(glfwExtensions[i]));
-                }
-            }
-            
-            vk::InstanceCreateInfo createInfo{ // Tells Vulkan driver which global extensions and validation layers we want to use (apply to entire program, not a specific device)
-                .pApplicationInfo = &appInfo,
-                .enabledExtensionCount = glfwExtensionCount,
-                .ppEnabledExtensionNames = glfwExtensions
-            };
+            std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount); // The unpacked list of all glfw extensions
 
-
-            // Finally create the damn Vulkan instance
-            instance = vk::raii::Instance(context, createInfo);
-
+            return extensions;
         }
 
         void mainLoop() {
@@ -83,10 +138,9 @@ class HelloTriangleApplication {
             glfwTerminate(); // Uninitializze the library from memory
         }
 
-
     
     private:
-        GLFWwindow *window = nullptr; // Pointer to the window object's place in memory'
+        GLFWwindow *window = nullptr; // Pointer to the window object's place in memory
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr;
 
