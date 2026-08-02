@@ -1,8 +1,12 @@
 #include <vulkan-tutorial/app/Application.hpp>
 
+// External libraries
+#include <vulkan/vulkan_raii.hpp>
+
 // Constructor
 Application::Application() :
-    window(800, 600, "Vulkan")
+    window(800, 600, "Vulkan"),
+    vulkan("Hello Triangle", "No Engine")
 {
 
 }
@@ -18,7 +22,7 @@ void Application::run() {
 
 // Keep window from auto-closing
 void Application::mainLoop() {
-    while (!glfwWindowShouldClose(window.getWindow())) { // Keeps window from auto-closing on startup
-        glfwPollEvents();
+    while (!window.shouldClose()) { // Keeps window from auto-closing on startup
+        window.pollEvents();
     }
 }

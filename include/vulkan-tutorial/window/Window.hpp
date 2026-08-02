@@ -6,7 +6,7 @@
 #include <cstdint>
 
 // External Libraries
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
 
 class Window {
     // Public functions
@@ -19,6 +19,12 @@ class Window {
 
         // Get a pointer to the current window object
         GLFWwindow* getWindow() const; // Const at end; this function returns window but does not modify it
+
+        // Get a bool for if window should close or not
+        bool shouldClose() const; // Const at end; this function returns window but does not modify it
+
+        // Poll the window events (useful to see if user clicked a button)
+        void pollEvents() const;
     
     // Private variables
     private:

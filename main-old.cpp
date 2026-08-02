@@ -74,7 +74,7 @@ class HelloTriangleApplication {
         }
 
         void createInstance() {
-             // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
+            // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
             constexpr vk::ApplicationInfo appInfo{
                 .pApplicationName = "Hello Triangle",
                 .applicationVersion = vk::makeVersion(1, 0, 0),

@@ -1,10 +1,8 @@
 #pragma once
 
-// External libraries
-#include <vulkan/vulkan_raii.hpp>
-
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
+#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
 
 // Standard C++ Libraries
 #include <iostream>
@@ -29,4 +27,5 @@ class Application {
     // Private variables
     private:
         Window window;
+        Vulkan vulkan;
 };

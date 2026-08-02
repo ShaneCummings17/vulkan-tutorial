@@ -1,5 +1,8 @@
 #include <vulkan-tutorial/window/Window.hpp>
 
+// External Libraries
+#include <GLFW/glfw3.h>
+
 // Constructor
 Window::Window(uint32_t width, uint32_t height, const char* title) :
     width(width),
@@ -23,4 +26,14 @@ Window::~Window() {
 // Get a pointer to the current window object
 GLFWwindow* Window::getWindow() const {
     return window; 
+}
+
+// Get a bool for if window should close or not
+bool Window::shouldClose() const {
+    return glfwWindowShouldClose(window);
+}
+
+// Poll the window events (useful to see if user clicked a button)
+void Window::pollEvents() const {
+    glfwPollEvents();
 }

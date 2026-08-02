@@ -15,6 +15,7 @@ add_executable(VulkanTutorial
     main.cpp
     src/app/Application.cpp
     src/window/Window.cpp
+    src/vulkan-api/Vulkan.cpp
 )
 
 # External dependencies
