@@ -1,5 +1,8 @@
 #include <vulkan-tutorial/window/Window.hpp>
 
+// Standard C++ Libraries
+#include <stdexcept>
+
 // External Libraries
 #include <GLFW/glfw3.h>
 
@@ -28,6 +31,15 @@ GLFWwindow* Window::getWindow() const {
     return window; 
 }
 
+// Get the required extensions for glfw
+std::vector<const char*> Window::getRequiredWindowExtensions() const {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    std::vector requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    return requiredExtensions;
+};
+
 // Get a bool for if window should close or not
 bool Window::shouldClose() const {
     return glfwWindowShouldClose(window);
@@ -36,4 +48,13 @@ bool Window::shouldClose() const {
 // Poll the window events (useful to see if user clicked a button)
 void Window::pollEvents() const {
     glfwPollEvents();
+}
+
+// Create the surface that Vulkan will use
+VkSurfaceKHR Window::createSurface(VkInstance instance) const {
+    VkSurfaceKHR surface = nullptr;
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != 0) {
+        throw std::runtime_error("failed to create window surface!");
+    }
+    return surface;
 }

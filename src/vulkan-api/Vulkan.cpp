@@ -2,9 +2,7 @@
 
 // Standard C++ Libraries
 #include <iostream>
-
-// External libraries
-#include <GLFW/glfw3.h>
+#include <vector>
 
 // Local variables
 namespace {
@@ -34,13 +32,24 @@ namespace {
 }
 
 // Constructor
-Vulkan::Vulkan(const char *appName, const char *engine) {
+Vulkan::Vulkan(
+    const char *appName,
+    const char *engine, 
+    const std::vector<const char*> requiredWindowExtensions,
+    VkSurfaceKHR rawSurface
+) {
     createInstance();
     setupDebugMessenger();
+    surface = vk::raii::SurfaceKHR(instance, rawSurface);
 };
 
 // Destructor
 Vulkan::~Vulkan() {};
+
+// Get a pointer to the raw instance
+VkInstance Vulkan::getRawInstance() const {
+    return *instance; 
+}
 
 // Initialize Vulkan instance in memory
 void Vulkan::createInstance() {
@@ -97,7 +106,6 @@ void Vulkan::setupDebugMessenger() {
     );
 }
 
-
 // ***HELPER FUNCTIONS***
 // Get the required Validation Layers (i.e., components that hook into Vulkan function calls to perform additional operations);
 // Validation Layers are generally used for debugging interaction between the GPU driver and the graphics application
@@ -135,11 +143,8 @@ std::vector<const char*> Vulkan::getRequiredValidationLayers() {
 
 // Get the required Extensions (modular add-ons that expand the API; basically optional libraries)
 std::vector<const char*> Vulkan::getRequiredExtensions() {
-    // Get the required global instance extensions from GLFW; basically tell Vulkan how to interface w/glfw on the OS the binary is running on
-    uint32_t glfwExtensionCount = 0;
-    auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount); // The unpacked list of all glfw extensions
+    // Get the required global instance extensions from the window
+    std::vector<const char*> requiredExtensions = requiredWindowExtensions; // The unpacked list of all window extensions
 
     if (enableValidationLayers) { // If validation layers are enabled, include the debug messenger extension as required
         requiredExtensions.push_back(vk::EXTDebugUtilsExtensionName);

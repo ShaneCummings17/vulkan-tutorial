@@ -1,12 +1,9 @@
 #include <vulkan-tutorial/app/Application.hpp>
 
-// External libraries
-#include <vulkan/vulkan_raii.hpp>
-
 // Constructor
 Application::Application() :
     window(800, 600, "Vulkan"),
-    vulkan("Hello Triangle", "No Engine")
+    vulkan("Hello Triangle", "No Engine", window.getRequiredWindowExtensions(), window.createSurface((vulkan.getRawInstance())))
 {
 
 }

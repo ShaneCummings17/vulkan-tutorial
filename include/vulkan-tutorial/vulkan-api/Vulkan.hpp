@@ -14,10 +14,18 @@ class Vulkan {
     // Public functions
     public:
         // Constructor declaration
-        Vulkan(const char *appName, const char *engine);
+        Vulkan(
+            const char *appName,
+            const char *engine,
+            const std::vector<const char*> requiredWindowExtensions,
+            VkSurfaceKHR rawSurface
+        );
 
         // Destructor declaration
         ~Vulkan();
+
+        // Get a pointer to the raw instance
+        VkInstance getRawInstance() const;
 
     // Private functions
     private:
@@ -26,7 +34,6 @@ class Vulkan {
 
         // Set up the debug messages (if running in debug mode)
         void setupDebugMessenger();
-
 
         // ***HELPER FUNCTIONS***
         // Declared as private members as they need access to Vulkan context
@@ -38,7 +45,9 @@ class Vulkan {
     private:
         const char *appName; // Has to be const char* because of Vulkan API requirements
         const char *engine;
+        const std::vector<const char*> requiredWindowExtensions;
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
+        vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will be rendered; connects the Vulkan API to the window
 };
