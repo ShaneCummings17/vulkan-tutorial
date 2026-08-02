@@ -44,16 +44,16 @@ constexpr bool enableValidationLayers = true;
 class HelloTriangleApplication {
     public:
         void run() {
-            initWindow();
-            initVulkan();
-            mainLoop();
-            cleanup();
+            initWindow(); // Initialize a GLFW instance to interact with the API
+            initVulkan(); // Initialize a Vulkan instance to interact with the API
+            mainLoop(); // Keep window from auto-closing
+            cleanup(); // Kill the window; Vulkan instance is auto-terminated
         }
 
 
     private:
         void initWindow() {
-            glfwInit(); // Initialize glfw in memory
+            glfwInit(); // Create a glfw instance so we can interact with the SPI
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Tell glfw to not create an OpenGL context
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Disable resizing of window
 
@@ -65,9 +65,11 @@ class HelloTriangleApplication {
         void initVulkan() {
             createInstance(); // Initialize Vulkan instance in memory. Allows devs to interact with the Vulkan API
             setupDebugMessenger(); // Set up the debug messages (if running in debug mode)
-            createSurface(); // Create the window surface that the Vulkan API will render to
+            createSurface(); // Create the window surface that the Vulkan API will render to (surface is platform agnostic; create surface and link to GLFW window)
             pickPhysicalDevice(); // Pick the graphics card we're running on
             createLogicalDevice(); // Create a logical device that will allow the application to interface with the physical device
+            createSwapChain(); // Create the swapchain (render an image in the background while image displayed on screen; then swap new image to screen)
+            createImageViews(); // Create the image views
         }
 
         void createInstance() {
@@ -80,13 +82,15 @@ class HelloTriangleApplication {
                 .apiVersion = vk::ApiVersion14
             };
 
-            // Get the required validation layers; if enabled, creates a copy of the validationLayers object
+            // Get the required Validation Layers (i.e., components that hook into Vulkan function calls to perform additional operations);
+            // If enabled, creates a copy of the validationLayers object
+            // Validation Layers are generally used for debugging interaction between the GPU driver and the graphics application
             std::vector<char const*> requiredLayers;
             if (enableValidationLayers) {
                 requiredLayers.assign(validationLayers.begin(), validationLayers.end());
             }
 
-            // Check if the required layers are supported by the Vulkan implementation
+            // Check if the required validation layers are supported by the Vulkan implementation
             auto layerProperties = context.enumerateInstanceLayerProperties(); // Get all available global Vulkan layers on host system
             auto unsupportedLayerIt = std::ranges::find_if( // Search through requiredLayers for the first item that matches the condition; the condition being, does it find a layer that isn't present on the host system?
                 requiredLayers,
@@ -101,10 +105,10 @@ class HelloTriangleApplication {
             );
 
             if (unsupportedLayerIt != requiredLayers.end()) { // If literally any layer was found that is not available, throw a runtime error
-                throw std::runtime_error("Required layer not supported!");
+                 throw std::runtime_error("Required layer not supported" + std::string(*unsupportedLayerIt));
             };
 
-            // Get the required extensions
+            // Get the required Extensions (modular add-ons that expand the API; basically optional libraries)
             auto requiredExtensions = getRequiredInstanceExtensions();
 
             // Check if the required extensions are supported by the Vulkan implementation
@@ -121,7 +125,7 @@ class HelloTriangleApplication {
                 }
             );
             
-            if (unsupportedPropertyIt != requiredExtensions.end()) {
+            if (unsupportedPropertyIt != requiredExtensions.end()) {  // If literally any extension was found that is not available, throw a runtime error
                 throw std::runtime_error("Required extension not supported" + std::string(*unsupportedPropertyIt));
             };
             
@@ -133,8 +137,7 @@ class HelloTriangleApplication {
                 .ppEnabledExtensionNames = requiredExtensions.data()
             };
 
-
-            // Finally create the damn Vulkan instance; when it goes out of scope, the object will be deconstructed and free memory (RAII -- aka the point of C++/Vulkan HPP)
+            // Finally create the damn Vulkan instance; when it goes out of scope, the object will be deconstructed and free memory (RAII -- aka the point of the Vulkan HPP wrappers)
             instance = vk::raii::Instance(context, createInfo);
 
         }
@@ -168,7 +171,7 @@ class HelloTriangleApplication {
         }
 
         void setupDebugMessenger() {
-            if (!enableValidationLayers) return; // Checks if we're in debug mode or not
+            if (!enableValidationLayers) return; // Checks if we're in debug mode; if we're not, don't even bother setting this up
 
             vk::DebugUtilsMessageSeverityFlagsEXT severityFlags( // How severe is the message? Only output debug messages for warning or above. Can add eVerbose and eInfo to increase error output.
                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
@@ -234,7 +237,7 @@ class HelloTriangleApplication {
         // Test each device to confirm suitability
         bool isDeviceSuitable(vk::raii::PhysicalDevice const &physicalDevice) {
 
-            auto physicalDeviceProperties = physicalDevice.getProperties(); // Avoid duplicate function calls; saves a CPU cycle
+            auto physicalDeviceProperties = physicalDevice.getProperties(); // Avoid duplicate function calls; saves a CPU cycle. Doesn't really matter but eh
 
             // STEP #1: Does the device support Vulkan 13 and up?
             bool supportsVulkan1_3 = physicalDeviceProperties.apiVersion >= vk::ApiVersion13;
@@ -288,10 +291,13 @@ class HelloTriangleApplication {
         }
 
         void createLogicalDevice() {
-            // STEP #1: Get the physical device's queue info and find the first queue family that supports graphics
+            // STEP #1: Get the physical device's queue family info
             std::vector<vk::QueueFamilyProperties> queueFamilyPropeties = physicalDevice.getQueueFamilyProperties();
 
-            // STEP #2: Get the first index into queueFamilyProperties that supports both graphics and presentation
+            // STEP #2: Get the first index into queueFamilyProperties that supports both graphics and present
+            // Graphics == execution of rendering commands
+            // Present == displaying images onto window surface via swapchain
+            // We could technically use different queues for graphics and present, but this is inefficient and should only be done in rare situations
             // Doing the loop a bit different here than the tutorial cause I have access to C++ 23 features
             uint32_t queueIndex = UINT32_MAX;
             for (auto [index, qfp] : std::views::enumerate(queueFamilyPropeties)) { // Loop over all the queues in the queue family
@@ -307,6 +313,7 @@ class HelloTriangleApplication {
 
             // STEP #3: Set the priority of the chosen queue (help the GPU decide which command in the buffer should run first)
             // Takes a float between 0.0 and 1.0
+            // Doesn't really matter in this situation; setting to 0.5 for easy queue ordering later if we add a compute queue or something
             float queuePriority = 0.5f;
 
             // STEP #4: Create the info for the queue that will be passed to the Vulkan instance
@@ -320,8 +327,11 @@ class HelloTriangleApplication {
             vk::PhysicalDeviceFeatures deviceFeatures;
             
             // STEP #6: Enable the device's access to Vulkan 13 features and lower using structure chaining (basically a linked list)
-            // Only Vulkan 1.0 features are enabled by default for backwards compat;
+            // Only Vulkan 1.0 features are enabled by default for backwards compat w/older GPUs;
             // using newer features requires explicit opt-in
+            // Extensions -- add new Vulkan API functionality
+            // Validation Layers -- add hooks into Vulkan APIs to perform some action
+            // Features -- GPU features to manually give the device access to
             vk::StructureChain<
                 vk::PhysicalDeviceFeatures2,
                 vk::PhysicalDeviceVulkan11Features,
@@ -348,28 +358,28 @@ class HelloTriangleApplication {
         }
 
         void createSwapChain() {
-            // Get the surface capabilities
+            // Get the surface capabilities (i.e., what does the window system allow you to do with a swapchain)
             vk::SurfaceCapabilitiesKHR capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
             // Get the swap chain extent (resolution of the frames)
             swapChainExtent = chooseSwapExtent(capabilities);
 
-            // Get the image count the swap chain will use
-            uint32_t imageCount = chooseSwapImageCount(capabilities) + 1;
+            // Get the image count the swap chain will use (i.e., 2 images in chain at once, 3 images in chain at once, 4 images in chain at once, etc.)
+            uint32_t minImageCount = chooseSwapMinImageCount(capabilities) + 1;
 
-            // Choose the swap chain surface format
-            std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(*surface);
-            swapChainSurfaceFormat = chooseSwapSurfaceFormat(availableFormats);
-
-            // Choose the present mode
+            // Choose the present mode (i.e., double buffering, triple buffering, etc.)
             std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(*surface);
             auto swapChainPresentMode = chooseSwapPresentMode(availablePresentModes);
+
+            // Choose the swap chain surface format (how the pixel data is laid out) and how colors are interpreted (i.e., SRGB, HDR color spaces, etc.)
+            std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(*surface);
+            swapChainSurfaceFormat = chooseSwapSurfaceFormat(availableFormats);
 
             // Create the swap chain
             vk::SwapchainCreateInfoKHR swapChainCreateInfo{
                 .surface = *surface,                                        // The surface we're rendering to
-                .minImageCount = imageCount,                                // The number of images we want the swap chain to use
-                .imageFormat = swapChainSurfaceFormat.format,               // The color format we're using
+                .minImageCount = minImageCount,                             // The number of images we want the swap chain to use
+                .imageFormat = swapChainSurfaceFormat.format,               // The format is which the pixel data is laid out
                 .imageColorSpace = swapChainSurfaceFormat.colorSpace,       // The color space we're using
                 .imageExtent = swapChainExtent,                             // The frame resolution
                 .imageArrayLayers = 1,                                      // The number of layers each image consists of (always 1 unless doing stereoscopic images)
@@ -377,7 +387,7 @@ class HelloTriangleApplication {
                 .imageSharingMode = vk::SharingMode::eExclusive,            // How to handle swap chain images that might be used across multiple queue families; eExclusive == owned by one queue family at a time (best performance)
                 .preTransform = capabilities.currentTransform,              // Transformations allowed to images (ex. rotation by 90 degrees)
                 .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,   // Specifies if the alpha channel should be used for blending with other windows; normally will want to ignore this
-                .presentMode = swapChainPresentMode,                             // The buffer mode; choosing between triple and double buffering <VSync>
+                .presentMode = swapChainPresentMode,                        // The buffer mode; generally choosing between triple and double buffering <VSync>
                 .clipped = true,                                            // Whether or not we care about the color of obscured pixels (true == we do not)
                 .oldSwapchain = nullptr                                     // The previous swap chain this one is created from; useful for window resizing when the swap chain needs to be recreated from scratch
             };
@@ -386,17 +396,40 @@ class HelloTriangleApplication {
             swapChainImages = swapChain.getImages();
         }
 
-        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats) {
-            // Find if an available surface format that supports SRGB
-            const auto formatIt = std::ranges::find_if(
-                availableFormats,
-                [](const auto &format) {
-                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-                }
-            );
+        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) {
+            // Swap extent determines the width and height (resolution) of each swap chain image
 
-            // If an SRGB format does not exist, just return the first one from the available list
-            return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+            // Some platforms define the swap extent automatically; if currentExtent != UINT32_MAX, Vulkan has already chosen the size for you
+            if (capabilities.currentExtent.width != UINT32_MAX) {
+                return capabilities.currentExtent;
+            }
+
+            // If Vulkan hasn't decided the resolution of the frames, it's up to you to decide
+            int width, height;
+
+             // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
+             // Window size == size in screen coordinates (logical units)
+             // Framebuffer size == size in actual pixels that the GPU renders to
+            glfwGetFramebufferSize(window, &width, &height);
+
+            // Force the width and height the framebuffer is asking for into Vulkan's allowed range
+            return {
+                std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width), // Clamp width to within the surface's allowed range
+                std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height) // Clamp height to within the surface's allowed range
+            };
+        }
+
+        uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &capabilities) {
+            // Default to using triple buffering (or larger if the GPU requires it)
+            auto minImageCount = std::max(3u, capabilities.minImageCount);
+
+            // If the GPU requires smaller than 3, use that instead
+            if ((0 < capabilities.maxImageCount) && (capabilities.maxImageCount < minImageCount)) {
+                minImageCount = capabilities.maxImageCount;
+            }
+
+            // Return the number of images our swap chain will be using
+            return minImageCount;
         }
 
         vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes) {
@@ -419,36 +452,44 @@ class HelloTriangleApplication {
             ) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
         }
 
-        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) {
-            // Swap extent determines the width and height (resolution) of each swap chain image
+        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats) {
+            // Find if an available surface format that supports SRGB
+            const auto formatIt = std::ranges::find_if(
+                availableFormats,
+                [](const auto &format) {
+                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+                }
+            );
 
-            // Some platforms define the swap extent automatically; if currentExtent != UINT32_MAX, Vulkan has already chosen the size for you
-            if (capabilities.currentExtent.width != UINT32_MAX) {
-                return capabilities.currentExtent;
-            }
-
-            // If Vulkan hasn't decided the resolution of the frames, it's up to you to decide
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height); // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
-
-            // Force the width and height the framebuffer is asking for into Vulkan's allowed range
-            return {
-                std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
-                std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
-            };
+            // If an SRGB format does not exist, just return the first one from the available list
+            return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
         }
 
-        uint32_t chooseSwapImageCount(vk::SurfaceCapabilitiesKHR const &capabilities) {
-            // Default to using triple buffering (or larger if the GPU requires it)
-            auto imageCount = std::max(3u, capabilities.minImageCount);
+        void createImageViews() {
+            // Ther viewType, format, and subresourceRange are identical for each image view
 
-            // If the GPU requires smaller than 3, use that instead
-            if ((0 < capabilities.maxImageCount) && (capabilities.maxImageCount < imageCount)) {
-                imageCount = capabilities.maxImageCount;
-            }
+            // Make sure our image views vector is empty before we begin
+            assert(swapChainImageViews.empty());
 
-            // Return the number of images our swap chain will be using
-            return imageCount;
+            // Create the info block as per usual
+            vk::ImageViewCreateInfo imageViewCreateInfo{
+                .viewType = vk::ImageViewType::e2D,                                     // viewType; specify we're rendering to a 2d screen (most cases)
+                .format = swapChainSurfaceFormat.format,                                // format; how the colorspace components are configured so we getr the right color format in renders
+                .subresourceRange = {                                                   // subresourceRange; describes what the image's purpose is and which part of the image should be accessed. Our images will be used as color targets w/o mipmapping for right now.
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .levelCount = 1,
+                    .layerCount = 1
+                },      
+            };
+
+            // Iterate over all swap chain images and add them to the structure
+            // I.e., grab the swap chain's 3 "image" blocks (assuming triple buffering)
+            // We'll render directly to these blocks as our output
+            for (auto &image : swapChainImages) {
+                imageViewCreateInfo.image = image;
+                swapChainImageViews.emplace_back(device, imageViewCreateInfo); // Add object to the end of the vector
+            };
+
         }
 
 
@@ -469,15 +510,16 @@ class HelloTriangleApplication {
         GLFWwindow *window = nullptr; // Pointer to the window object's place in memory
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
-        vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Add a class member for the debug messenger handle
+        vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
         vk::raii::PhysicalDevice  physicalDevice = nullptr; // The hardware the program is running against
         vk::raii::Device device = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
         vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will bne rendered; connects the Vulkan API to the GLFW window
         vk::raii::SwapchainKHR swapChain = nullptr; // The swapchain used to render frames
         std::vector<vk::Image> swapChainImages; // The images in the swapchain
-        vk::SurfaceFormatKHR swapChainSurfaceFormat;
-        vk::Extent2D swapChainExtent;
+        vk::SurfaceFormatKHR swapChainSurfaceFormat; // The format that pixels are laid out + the color space
+        vk::Extent2D swapChainExtent; // The resolution of images in the swap chain
+        std::vector<vk::raii::ImageView> swapChainImageViews; // A vector storing image views (i.e., how to access the image, which part to access, if it should be treated as a 2D depth texture, etc.)
 
 };
 
