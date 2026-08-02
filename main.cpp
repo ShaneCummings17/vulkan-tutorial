@@ -1,11 +1,21 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define GLFW_INCLUDE_VULKAN
+
+// Vulkan and dependent libraries
 #include <vulkan/vulkan_raii.hpp>
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-#include <stdexcept>
+// C standard libraries
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <limits>
+#include <ranges>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 // Constants
 constexpr uint32_t WIDTH = 800; // Window width
@@ -55,6 +65,7 @@ class HelloTriangleApplication {
         void initVulkan() {
             createInstance(); // Initialize Vulkan instance in memory. Allows devs to interact with the Vulkan API
             setupDebugMessenger(); // Set up the debug messages (if running in debug mode)
+            createSurface(); // Create the window surface that the Vulkan API will render to
             pickPhysicalDevice(); // Pick the graphics card we're running on
             createLogicalDevice(); // Create a logical device that will allow the application to interface with the physical device
         }
@@ -142,15 +153,18 @@ class HelloTriangleApplication {
             return extensions;
         }
 
-        static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
-            vk::DebugUtilsMessageSeverityFlagBitsEXT severity, // Severity level of the message
-            vk::DebugUtilsMessageTypeFlagsEXT type, // Type of debug message
-            const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, // A pointer to the debug message
-            void *pUserData // nullptr; not applicable for this implementation. would contain a pointer to custom data I provide
-        ) {
-            std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl; // Send the debug message over to the debug messenger
+        void createSurface() {
+            // Create a raw Vulkan C handle for the window surface
+            VkSurfaceKHR _surface;
 
-            return vk::False;
+            // Create a Vulkan surface that connects Vulkan to the GLFW window object
+            if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != 0) {
+                throw std::runtime_error("failed to create window surface!");
+            };
+
+            // Wrap the raw Vulkan surface handle in a RAII C++ object so we don't gotta remember to delete it later
+            // Death to memory leaks!
+            surface = vk::raii::SurfaceKHR(instance, _surface);
         }
 
         void setupDebugMessenger() {
@@ -176,6 +190,17 @@ class HelloTriangleApplication {
             debugMessenger = instance.createDebugUtilsMessengerEXT( // Attach the debug messenger to read the output of the created vulkan instance
                 debugUtilsMessengerCreateInfoEXT
             );
+        }
+
+        static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
+            vk::DebugUtilsMessageSeverityFlagBitsEXT severity, // Severity level of the message
+            vk::DebugUtilsMessageTypeFlagsEXT type, // Type of debug message
+            const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, // A pointer to the debug message
+            void *pUserData // nullptr; not applicable for this implementation. would contain a pointer to custom data I provide
+        ) {
+            std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl; // Send the debug message over to the debug messenger
+
+            return vk::False;
         }
 
         void pickPhysicalDevice() { // What is the graphics card should Vulkan use?
@@ -263,37 +288,38 @@ class HelloTriangleApplication {
         }
 
         void createLogicalDevice() {
-
-            // STEP #1: Get the physical device's queue info and find the first one that supports graphics
+            // STEP #1: Get the physical device's queue info and find the first queue family that supports graphics
             std::vector<vk::QueueFamilyProperties> queueFamilyPropeties = physicalDevice.getQueueFamilyProperties();
-            auto graphicsQueueFamilyProperty = std::ranges::find_if(
-                queueFamilyPropeties,
-                [](auto const &qfp) {
-                    return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); // Does this queue family have a graphics bit set?
-                }
-            );
-            auto graphicsIndex = static_cast<uint32_t>(
-                std::distance(
-                    queueFamilyPropeties.begin(),
-                    graphicsQueueFamilyProperty
-                )
-            );
 
-            // STEP #2: Set the priority of the chosen queue (help the GPU decide which command in the buffer should run first)
+            // STEP #2: Get the first index into queueFamilyProperties that supports both graphics and presentation
+            // Doing the loop a bit different here than the tutorial cause I have access to C++ 23 features
+            uint32_t queueIndex = UINT32_MAX;
+            for (auto [index, qfp] : std::views::enumerate(queueFamilyPropeties)) { // Loop over all the queues in the queue family
+                if ((qfp.queueFlags & vk::QueueFlagBits::eGraphics) && physicalDevice.getSurfaceSupportKHR(index, *surface)) { // Return the first one that supports both graphics and present
+                    queueIndex = index;
+                    break;
+                }
+            }
+
+            if (queueIndex == UINT32_MAX) { // Were none found?
+                throw std::runtime_error("could not find a queue family for graphics and present --> terminating");
+            }
+
+            // STEP #3: Set the priority of the chosen queue (help the GPU decide which command in the buffer should run first)
             // Takes a float between 0.0 and 1.0
             float queuePriority = 0.5f;
 
-            // STEP #3: Create the info for the queue that will be passed to the Vulkan instance
+            // STEP #4: Create the info for the queue that will be passed to the Vulkan instance
             vk::DeviceQueueCreateInfo deviceQueueCreateInfo {
-                .queueFamilyIndex = graphicsIndex,
+                .queueFamilyIndex = queueIndex,
                 .queueCount = 1,
                 .pQueuePriorities = &queuePriority
             };
 
-            // STEP #4: Specify the set of device features that will be used (come back later)
+            // STEP #5: Specify the set of device features that will be used (come back later)
             vk::PhysicalDeviceFeatures deviceFeatures;
             
-            // STEP #5: Enable the device's access to Vulkan 13 features and lower using structure chaining (basically a linked list)
+            // STEP #6: Enable the device's access to Vulkan 13 features and lower using structure chaining (basically a linked list)
             // Only Vulkan 1.0 features are enabled by default for backwards compat;
             // using newer features requires explicit opt-in
             vk::StructureChain<
@@ -308,7 +334,7 @@ class HelloTriangleApplication {
                 {.extendedDynamicState = true}      // Enable extended dynamic state from the extension; lets us change specific pipeline settings on the fly during execution
             };
 
-            // STEP #6: Create the logical device and graphics queue
+            // STEP #7: Create the logical device and graphics queue
             vk::DeviceCreateInfo deviceCreateInfo{
                 .pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(), // Provide a pointer to the first element of the structure chain; Vulkan is smart enough to traverse the structure chain itself
                 .queueCreateInfoCount = 1,
@@ -318,7 +344,7 @@ class HelloTriangleApplication {
             };
 
             device = vk::raii::Device(physicalDevice, deviceCreateInfo);
-            graphicsQueue = vk::raii::Queue(device, graphicsIndex, 0);
+            graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
         }
 
 
@@ -343,6 +369,7 @@ class HelloTriangleApplication {
         vk::raii::PhysicalDevice  physicalDevice = nullptr; // The hardware the program is running against
         vk::raii::Device device = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
         vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
+        vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will bne rendered; connects the Vulkan API to the GLFW window
 
 };
 
