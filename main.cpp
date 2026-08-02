@@ -347,6 +347,110 @@ class HelloTriangleApplication {
             graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
         }
 
+        void createSwapChain() {
+            // Get the surface capabilities
+            vk::SurfaceCapabilitiesKHR capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+
+            // Get the swap chain extent (resolution of the frames)
+            swapChainExtent = chooseSwapExtent(capabilities);
+
+            // Get the image count the swap chain will use
+            uint32_t imageCount = chooseSwapImageCount(capabilities) + 1;
+
+            // Choose the swap chain surface format
+            std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(*surface);
+            swapChainSurfaceFormat = chooseSwapSurfaceFormat(availableFormats);
+
+            // Choose the present mode
+            std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(*surface);
+            auto swapChainPresentMode = chooseSwapPresentMode(availablePresentModes);
+
+            // Create the swap chain
+            vk::SwapchainCreateInfoKHR swapChainCreateInfo{
+                .surface = *surface,                                        // The surface we're rendering to
+                .minImageCount = imageCount,                                // The number of images we want the swap chain to use
+                .imageFormat = swapChainSurfaceFormat.format,               // The color format we're using
+                .imageColorSpace = swapChainSurfaceFormat.colorSpace,       // The color space we're using
+                .imageExtent = swapChainExtent,                             // The frame resolution
+                .imageArrayLayers = 1,                                      // The number of layers each image consists of (always 1 unless doing stereoscopic images)
+                .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,     // What kind of operations we're going to use the images in the swap chain for. We're rendering right to them; can also render to a separate image first for post-processing effects
+                .imageSharingMode = vk::SharingMode::eExclusive,            // How to handle swap chain images that might be used across multiple queue families; eExclusive == owned by one queue family at a time (best performance)
+                .preTransform = capabilities.currentTransform,              // Transformations allowed to images (ex. rotation by 90 degrees)
+                .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,   // Specifies if the alpha channel should be used for blending with other windows; normally will want to ignore this
+                .presentMode = swapChainPresentMode,                             // The buffer mode; choosing between triple and double buffering <VSync>
+                .clipped = true,                                            // Whether or not we care about the color of obscured pixels (true == we do not)
+                .oldSwapchain = nullptr                                     // The previous swap chain this one is created from; useful for window resizing when the swap chain needs to be recreated from scratch
+            };
+
+            swapChain = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
+            swapChainImages = swapChain.getImages();
+        }
+
+        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const &availableFormats) {
+            // Find if an available surface format that supports SRGB
+            const auto formatIt = std::ranges::find_if(
+                availableFormats,
+                [](const auto &format) {
+                    return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+                }
+            );
+
+            // If an SRGB format does not exist, just return the first one from the available list
+            return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+        }
+
+        vk::PresentModeKHR chooseSwapPresentMode(std::vector<vk::PresentModeKHR> const &availablePresentModes) {
+            // Check that at LEAST eFifo (VSync) exists
+            assert(
+                std::ranges::any_of(
+                    availablePresentModes,
+                    [](auto presentMode) {
+                        return presentMode == vk::PresentModeKHR::eFifo;
+                    }
+                )
+            );
+
+            // Check if eMailbox (triple buffering) exists; if not, default to VSync
+            return std::ranges::any_of(
+                availablePresentModes,
+                [](const vk::PresentModeKHR presentMode) {
+                    return vk::PresentModeKHR::eMailbox == presentMode;
+                }
+            ) ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo;
+        }
+
+        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) {
+            // Swap extent determines the width and height (resolution) of each swap chain image
+
+            // Some platforms define the swap extent automatically; if currentExtent != UINT32_MAX, Vulkan has already chosen the size for you
+            if (capabilities.currentExtent.width != UINT32_MAX) {
+                return capabilities.currentExtent;
+            }
+
+            // If Vulkan hasn't decided the resolution of the frames, it's up to you to decide
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height); // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
+
+            // Force the width and height the framebuffer is asking for into Vulkan's allowed range
+            return {
+                std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+                std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+            };
+        }
+
+        uint32_t chooseSwapImageCount(vk::SurfaceCapabilitiesKHR const &capabilities) {
+            // Default to using triple buffering (or larger if the GPU requires it)
+            auto imageCount = std::max(3u, capabilities.minImageCount);
+
+            // If the GPU requires smaller than 3, use that instead
+            if ((0 < capabilities.maxImageCount) && (capabilities.maxImageCount < imageCount)) {
+                imageCount = capabilities.maxImageCount;
+            }
+
+            // Return the number of images our swap chain will be using
+            return imageCount;
+        }
+
 
         void mainLoop() {
             while (!glfwWindowShouldClose(window)) { // Keeps window from auto-closing on startup
@@ -370,6 +474,10 @@ class HelloTriangleApplication {
         vk::raii::Device device = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
         vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will bne rendered; connects the Vulkan API to the GLFW window
+        vk::raii::SwapchainKHR swapChain = nullptr; // The swapchain used to render frames
+        std::vector<vk::Image> swapChainImages; // The images in the swapchain
+        vk::SurfaceFormatKHR swapChainSurfaceFormat;
+        vk::Extent2D swapChainExtent;
 
 };
 
