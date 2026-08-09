@@ -6,7 +6,9 @@
 // External Libraries
 #include <GLFW/glfw3.h>
 
-// Constructor
+
+
+/***** CONSTRUCTOR AND DESTRUCTOR *****/
 Window::Window(uint32_t width, uint32_t height, const char* title) :
     width(width),
     height(height),
@@ -20,12 +22,14 @@ Window::Window(uint32_t width, uint32_t height, const char* title) :
     window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
 }
 
-// Destructor
 Window::~Window() {
     glfwDestroyWindow(window); // C++; need to always free what you allocate
     glfwTerminate(); // Uninitialize the library from memory
 }
 
+
+
+/***** PUBLIC METHODS *****/
 // Get a pointer to the current window object
 GLFWwindow* Window::getWindow() const {
     return window; 
@@ -58,3 +62,7 @@ VkSurfaceKHR Window::createSurface(VkInstance instance) const {
     }
     return surface;
 }
+
+
+
+/***** PRIVATE METHODS *****/

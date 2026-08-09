@@ -1,5 +1,6 @@
 #pragma once
 
+// Macros
 #define GLFW_INCLUDE_VULKAN
 
 // Standard C++ Libraries

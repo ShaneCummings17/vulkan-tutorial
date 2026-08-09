@@ -2,56 +2,60 @@
 
 // Standard C++ Libraries
 #include <iostream>
-#include <vector>
+#include <algorithm>
+#include <cstring>
 
 // Local variables
 namespace {
-    #ifdef NDEBUG
-        constexpr bool enableValidationLayers = false;
+    // Conditional compilation
+    #ifdef NDEBUG // Only enable validation layers if running in debug mode; production release has them disabled to remove unnecessary overhead
+    constexpr bool enableValidationLayers = false;
     #else
-        constexpr bool enableValidationLayers = true;
+    constexpr bool enableValidationLayers = true;
     #endif
 
-    const std::vector<const char*> validationLayers = {
+    // List of validation layers
+    const std::vector<char const*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
 }
 
-// Local functions
+// Local helper functions
 namespace {
     static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
         vk::DebugUtilsMessageSeverityFlagBitsEXT severity, // Severity level of the message
         vk::DebugUtilsMessageTypeFlagsEXT type, // Type of debug message
         const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, // A pointer to the debug message
         void *pUserData // nullptr; not applicable for this implementation. would contain a pointer to custom data I provide
-    )
-    {
+    ) {
         std::cerr << "validation layer: type " << to_string(type) << " msg: " << pCallbackData->pMessage << std::endl; // Send the debug message over to the debug messenger
+
         return vk::False;
     }
 }
 
-// Constructor
-Vulkan::Vulkan(
-    const char *appName,
-    const char *engine, 
-    const std::vector<const char*> requiredWindowExtensions,
-    VkSurfaceKHR rawSurface
-) {
+
+/***** CONSTRUCTOR AND DESTRUCTOR *****/
+Vulkan::Vulkan(const char *appName, const char *engine, const Window *window) :
+    appName(appName),
+    engine(engine),
+    window(window)
+{
     createInstance();
     setupDebugMessenger();
-    surface = vk::raii::SurfaceKHR(instance, rawSurface);
-};
-
-// Destructor
-Vulkan::~Vulkan() {};
-
-// Get a pointer to the raw instance
-VkInstance Vulkan::getRawInstance() const {
-    return *instance; 
+    initSurface();
 }
 
-// Initialize Vulkan instance in memory
+Vulkan::~Vulkan() {};
+
+
+
+/***** PUBLIC METHODS *****/
+
+
+
+/***** PRIVATE METHODS *****/
+// Create the Vulkan instance
 void Vulkan::createInstance() {
     // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
     const vk::ApplicationInfo appInfo{
@@ -62,25 +66,82 @@ void Vulkan::createInstance() {
         .apiVersion = vk::ApiVersion14
     };
 
-    // Get the required Validation Layers
-    std::vector<char const*> requiredValidationLayers = getRequiredValidationLayers();
+    // Get the required Validation Layers (i.e., components that hook into Vulkan function calls to perform additional operations);
+    // If enabled, creates a copy of the validationLayers object
+    // Validation Layers are generally used for debugging interaction between the GPU driver and the graphics application
+    std::vector<char const*> requiredLayers;
+    if (enableValidationLayers) {
+        requiredLayers.assign(validationLayers.begin(), validationLayers.end());
+    }
 
-    // Get the required Extensions
-    std::vector<char const*> requiredExtensions = getRequiredExtensions();
+    // Check if the required validation layers are supported by the Vulkan implementation
+    auto layerProperties = context.enumerateInstanceLayerProperties(); // Get all available global Vulkan layers on host system
+    auto unsupportedLayerIt = std::ranges::find_if( // Search through requiredLayers for the first item that matches the condition; the condition being, does it find a layer that isn't present on the host system?
+        requiredLayers,
+        [&layerProperties](auto const &requiredLayer) {
+            return std::ranges::none_of( // Is there no element in layerProperties that matches requiredLayer?
+                layerProperties,
+                [requiredLayer](auto const &layerProperty) {
+                    return strcmp(layerProperty.layerName, requiredLayer) == 0;
+                }
+            );
+        }
+    );
 
-     // Tells Vulkan driver which global extensions and validation layers we want to use (apply to entire program, not a specific device)
+    // If literally any layer was found that is not available, throw a runtime error
+    if (unsupportedLayerIt != requiredLayers.end()) {
+            throw std::runtime_error("Required layer not supported" + std::string(*unsupportedLayerIt));
+    };
+
+    
+    // Get the required Extensions (modular add-ons that expand the API; basically optional libraries)
+    std::vector<const char*> requiredExtensions = getRequiredInstanceExtensions();
+
+    // Check if the required extensions are supported by the Vulkan implementation
+    auto extensionProperties = context.enumerateInstanceExtensionProperties(); // Get all extensions supported by Vulkan; returns a struct
+    auto unsupportedPropertyIt = std::ranges::find_if( // Search through requiredExtensions for the first item that matches the condition; the condition being, does it find a property that isn't present on the host system?
+        requiredExtensions,
+        [&extensionProperties](auto const &requiredExtension) {
+            return std::ranges::none_of( // Is there no element in extensionProperties that matches requiredExtension?
+                extensionProperties,
+                [requiredExtension](auto const &extensionProperty) {
+                    return strcmp(extensionProperty.extensionName, requiredExtension) == 0;
+                }
+            );
+        }
+    );
+    
+    // If literally any extension was found that is not available, throw a runtime error
+    if (unsupportedPropertyIt != requiredExtensions.end()) { 
+        throw std::runtime_error("Required extension not supported" + std::string(*unsupportedPropertyIt));
+    };
+
+    // Tells Vulkan driver which global extensions and validation layers we want to use (apply to entire program, not a specific device)
     vk::InstanceCreateInfo createInfo{
         .pApplicationInfo = &appInfo,
-        .enabledLayerCount = static_cast<uint32_t>(requiredValidationLayers.size()),
-        .ppEnabledLayerNames = requiredValidationLayers.data(),
+        .enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
+        .ppEnabledLayerNames = requiredLayers.data(),
         .enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
         .ppEnabledExtensionNames = requiredExtensions.data()
     };
 
-    // Create the Vulkan instance
+    // Finally create the damn Vulkan instance; when it goes out of scope, the object will be deconstructed and free memory (RAII -- aka the point of the Vulkan HPP wrappers)
     instance = vk::raii::Instance(context, createInfo);
 }
 
+std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
+    // Get the required global instance extensions from the window; basically tell Vulkan how to interface w/the window on the OS the binary is running on
+    std::vector<const char *> extensions = window->getRequiredWindowExtensions();
+
+    if (enableValidationLayers) { // If validation layers are enabled, include the debug messenger extension as required
+        extensions.push_back(vk::EXTDebugUtilsExtensionName);
+    }
+
+    return extensions;
+}
+
+
+// Create debug hooks
 void Vulkan::setupDebugMessenger() {
     if (!enableValidationLayers) return; // Checks if we're in debug mode; if we're not, don't even bother setting this up
 
@@ -106,67 +167,13 @@ void Vulkan::setupDebugMessenger() {
     );
 }
 
-// ***HELPER FUNCTIONS***
-// Get the required Validation Layers (i.e., components that hook into Vulkan function calls to perform additional operations);
-// Validation Layers are generally used for debugging interaction between the GPU driver and the graphics application
-std::vector<const char*> Vulkan::getRequiredValidationLayers() {
-    std::vector<char const *> requiredLayers;
 
-    // If we're not in debug mode, just return an empty vector
-    if (enableValidationLayers) {
-        requiredLayers.assign(validationLayers.begin(), validationLayers.end());
-    }
+// Initialize surface
+void Vulkan::initSurface() {
+    // Grab the surface from the window object
+    VkSurfaceKHR _surface = window->createSurface(*instance);
 
-    // Check if the required validation layers are supported by the Vulkan implementation
-    auto layerProperties = context.enumerateInstanceLayerProperties(); // Get all available global Vulkan layers on host system
-    auto unsupportedLayerIt = std::ranges::find_if( // Search through requiredLayers for the first item that matches the condition; the condition being, does it find a layer that isn't present on the host system?
-        requiredLayers,
-        [&layerProperties](auto const &requiredLayer) {
-            return std::ranges::none_of( // Is there no element in layerProperties that matches requiredLayer?
-                layerProperties,
-                [requiredLayer](auto const &layerProperty) {
-                    return strcmp(layerProperty.layerName, requiredLayer) == 0;
-                }
-            );
-        }
-    );
-
-    // If literally any layer was found that is not available, throw a runtime error
-    if (unsupportedLayerIt != requiredLayers.end()) { 
-        throw std::runtime_error("Required layer not supported: " + std::string(*unsupportedLayerIt));
-    };
-
-    // Return our list of requiredLayers
-    return requiredLayers;
-
-};
-
-// Get the required Extensions (modular add-ons that expand the API; basically optional libraries)
-std::vector<const char*> Vulkan::getRequiredExtensions() {
-    // Get the required global instance extensions from the window
-    std::vector<const char*> requiredExtensions = requiredWindowExtensions; // The unpacked list of all window extensions
-
-    if (enableValidationLayers) { // If validation layers are enabled, include the debug messenger extension as required
-        requiredExtensions.push_back(vk::EXTDebugUtilsExtensionName);
-    }
-
-    // Check if the required extensions are supported by the Vulkan implementation
-    auto extensionProperties = context.enumerateInstanceExtensionProperties(); // Get all extensions supported by Vulkan; returns a struct
-    auto unsupportedPropertyIt = std::ranges::find_if( // Search through requiredExtensions for the first item that matches the condition; the condition being, does it find a property that isn't present on the host system?
-        requiredExtensions,
-        [&extensionProperties](auto const &requiredExtension) {
-            return std::ranges::none_of( // Is there no element in extensionProperties that matches requiredExtension?
-                extensionProperties,
-                [requiredExtension](auto const &extensionProperty) {
-                    return strcmp(extensionProperty.extensionName, requiredExtension) == 0;
-                }
-            );
-        }
-    );
-    
-    if (unsupportedPropertyIt != requiredExtensions.end()) {  // If literally any extension was found that is not available, throw a runtime error
-        throw std::runtime_error("Required extension not supported" + std::string(*unsupportedPropertyIt));
-    };
-
-    return requiredExtensions;
-};
+    // Wrap the raw Vulkan surface handle in a RAII C++ object so we don't gotta remember to delete it later
+    // Death to memory leaks!
+    surface = vk::raii::SurfaceKHR(instance, _surface);
+}

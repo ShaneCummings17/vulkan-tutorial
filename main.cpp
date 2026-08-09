@@ -2,6 +2,7 @@
 #include <vulkan-tutorial/app/Application.hpp>
 
 // Standard C++ Libraries
+#include <iostream>
 #include <stdexcept>
 
 // Hook for C++ to start the executable
