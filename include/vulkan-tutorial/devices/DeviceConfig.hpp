@@ -1,8 +1,5 @@
 #pragma once
 
-// Macros
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-
 // Standard C++ libraries
 #include <vector>
 

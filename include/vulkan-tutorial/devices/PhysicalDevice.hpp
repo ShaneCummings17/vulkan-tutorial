@@ -1,8 +1,5 @@
 #pragma once
 
-// Macros
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
 
