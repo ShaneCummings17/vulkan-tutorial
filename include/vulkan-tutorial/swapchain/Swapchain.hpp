@@ -36,12 +36,11 @@ class Swapchain {
         void createSwapchain(
             const vk::raii::PhysicalDevice &physicalDevice,
             const vk::raii::SurfaceKHR &surface,
-            const Window &window,
-            const vk::raii::Device &logicalDevice
+            const Window &window
         );
 
         // Create the image views
-        void createImageViews(const vk::raii::Device &logicalDevice);
+        void createImageViews();
 
 
     // Private variables
@@ -51,4 +50,5 @@ class Swapchain {
         std::vector<vk::Image> swapchainImages; // The images in the swapchain
         vk::SurfaceFormatKHR swapchainSurfaceFormat; // The format that pixels are laid out + the color space
         std::vector<vk::raii::ImageView> swapchainImageViews; // A vector storing image views (i.e., how to access the image, which part to access, if it should be treated as a 2D depth texture, etc.)
+        const vk::raii::Device& logicalDevice; // The logical device the swapchain is attached to
 };

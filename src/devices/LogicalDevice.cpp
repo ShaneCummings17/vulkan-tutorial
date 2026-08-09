@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <ranges>
-#include <limits>
 
 // Shared Variables
 #include <vulkan-tutorial/devices/DeviceConfig.hpp>
@@ -29,6 +28,10 @@ const vk::raii::Queue& LogicalDevice::getGraphicsQueue() const {
     return graphicsQueue;
 }
 
+const uint32_t LogicalDevice::getQueueIndex() const {
+    return queueIndex;
+}
+
 
 /***** PRIVATE METHODS *****/
 void LogicalDevice::createLogicalDevice(const vk::raii::PhysicalDevice &physicalDevice, const vk::raii::SurfaceKHR &surface) {
@@ -42,7 +45,6 @@ void LogicalDevice::createLogicalDevice(const vk::raii::PhysicalDevice &physical
     // Present == displaying images onto window surface via swapchain
     // We could technically use different queues for graphics and present, but this is inefficient and should only be done in rare situations
     // Doing the loop a bit different here than the tutorial cause I have access to C++ 23 features
-    uint32_t queueIndex = UINT32_MAX;
     for (auto [index, qfp] : std::views::enumerate(queueFamilyPropeties)) { // Loop over all the queues in the queue family
         if ((qfp.queueFlags & vk::QueueFlagBits::eGraphics) && physicalDevice.getSurfaceSupportKHR(index, *surface)) { // Return the first one that supports both graphics and present
             queueIndex = index;

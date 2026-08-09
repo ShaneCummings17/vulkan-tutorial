@@ -10,6 +10,7 @@
 #include <vulkan-tutorial/devices/LogicalDevice.hpp>
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
 #include <vulkan-tutorial/graphics-pipeline/GraphicsPipeline.hpp>
+#include <vulkan-tutorial/commands/Commands.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -59,4 +60,5 @@ class Vulkan {
         std::unique_ptr<LogicalDevice> logicalDevice; // The logical device the program is running on; i.e., the application's interface to the hardware
         std::unique_ptr<Swapchain> swapchain; // The swapchain used to render frames
         std::unique_ptr<GraphicsPipeline> graphicsPipeline; // The graphics pipeline
+        std::unique_ptr<Commands> commands; // The commands object containing both the commandPool and the commandBuffer
 };

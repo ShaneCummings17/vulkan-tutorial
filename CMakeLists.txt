@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}
     src/devices/LogicalDevice.cpp
     src/swapchain/Swapchain.cpp
     src/graphics-pipeline/GraphicsPipeline.cpp
+    src/commands/Commands.cpp
 )
 
 # External dependencies

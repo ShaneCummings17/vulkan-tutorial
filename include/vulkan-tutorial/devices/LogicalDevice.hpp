@@ -1,5 +1,8 @@
 #pragma once
 
+// Standard C++ Libraries
+#include <limits>
+
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
 
@@ -15,6 +18,9 @@ class LogicalDevice {
         // Get the logical device object
         const vk::raii::Device& getLogicalDevice() const;
 
+        // Get the queueIndex
+        const uint32_t getQueueIndex() const;
+
         // Get the device graphics queue
         const vk::raii::Queue& getGraphicsQueue() const;
 
@@ -27,5 +33,6 @@ class LogicalDevice {
     // Private variables
     private:
         vk::raii::Device logicalDevice = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
+        uint32_t queueIndex = UINT32_MAX;
         vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
 };

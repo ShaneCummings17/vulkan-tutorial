@@ -64,9 +64,10 @@ Swapchain::Swapchain(
     const vk::raii::SurfaceKHR &surface,
     const Window &window,
     const vk::raii::Device &logicalDevice
-) {
-    createSwapchain(physicalDevice, surface, window, logicalDevice);
-    createImageViews(logicalDevice);
+) : logicalDevice(logicalDevice)
+{
+    createSwapchain(physicalDevice, surface, window);
+    createImageViews();
 }
 
 Swapchain::~Swapchain() {}
@@ -92,8 +93,7 @@ const vk::SurfaceFormatKHR& Swapchain::getSwapchainSurfaceFormat() const {
 void Swapchain::createSwapchain(
     const vk::raii::PhysicalDevice &physicalDevice,
     const vk::raii::SurfaceKHR &surface,
-    const Window &window,
-    const vk::raii::Device &logicalDevice
+    const Window &window
 )
 {
     // Get the surface capabilities (i.e., what does the window system allow you to do with a swapchain)
@@ -135,7 +135,7 @@ void Swapchain::createSwapchain(
     swapchainImages = swapchain.getImages();
 }
 
-void Swapchain::createImageViews(const vk::raii::Device &logicalDevice) {
+void Swapchain::createImageViews() {
     // The viewType, format, and subresourceRange are identical for each image view
 
     // Make sure our image views vector is empty before we begin
