@@ -50,6 +50,9 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
 
     // Create the Logical Device
     logicalDevice = std::make_unique<LogicalDevice>(physicalDevice->getPhysicalDevice(), surface);
+
+    // Create the Swapchain + Image views
+    swapchain = std::make_unique<Swapchain>(physicalDevice->getPhysicalDevice(), surface, window, logicalDevice->getLogicalDevice());
 }
 
 Vulkan::~Vulkan() {};

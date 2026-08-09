@@ -4,7 +4,7 @@
 #include <vulkan/vulkan_raii.hpp>
 
 class PhysicalDevice {
-    // Public functions
+    // Public methods
     public:
         // Constructor declaration
         explicit PhysicalDevice(const vk::raii::Instance &instance);
@@ -15,7 +15,7 @@ class PhysicalDevice {
         // Get the current PhysicalDevice object
         const vk::raii::PhysicalDevice& getPhysicalDevice() const;
 
-    // Private functions
+    // Private methods
     private:
         // Pick the physical device
         void pickPhysicalDevice(const vk::raii::Instance &instance);

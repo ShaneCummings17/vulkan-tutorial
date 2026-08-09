@@ -4,7 +4,7 @@
 #include <vulkan/vulkan_raii.hpp>
 
 class LogicalDevice {
-    // Public functions
+    // Public methods
     public:
         // Constructor declaration
         explicit LogicalDevice(const vk::raii::PhysicalDevice &physicalDevice, vk::raii::SurfaceKHR &surface);
@@ -18,7 +18,7 @@ class LogicalDevice {
         // Get the device graphics queue
         const vk::raii::Queue& getGraphicsQueue() const;
 
-    // Private functions
+    // Private methods
     private:
         // Create the logical device
         void createLogicalDevice(vk::raii::PhysicalDevice const &physicalDevice, const vk::raii::SurfaceKHR &surface);

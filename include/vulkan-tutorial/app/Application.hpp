@@ -5,7 +5,7 @@
 #include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
 
 class Application {
-    // Public functions
+    // Public methods
     public:
         // Constructor declaration
         Application();

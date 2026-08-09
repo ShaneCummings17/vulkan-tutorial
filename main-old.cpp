@@ -467,7 +467,7 @@ class HelloTriangleApplication {
         }
 
         void createImageViews() {
-            // Ther viewType, format, and subresourceRange are identical for each image view
+            // The viewType, format, and subresourceRange are identical for each image view
 
             // Make sure our image views vector is empty before we begin
             assert(swapChainImageViews.empty());

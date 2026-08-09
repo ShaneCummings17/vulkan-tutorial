@@ -2,6 +2,7 @@
 
 // Standard C++ Libraries
 #include <stdexcept>
+#include <limits>
 
 // External Libraries
 #include <GLFW/glfw3.h>
@@ -62,6 +63,30 @@ VkSurfaceKHR Window::createSurface(VkInstance instance) const {
     }
     return surface;
 }
+
+
+// Choose the swap extent (resolution) that the Swapchain will use
+vk::Extent2D Window::chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) const {
+    // Swap extent determines the width and height (resolution) of each swap chain image
+    // Some platforms define the swap extent automatically; if currentExtent != UINT32_MAX, Vulkan has already chosen the size for you
+    if (capabilities.currentExtent.width != UINT32_MAX) {
+        return capabilities.currentExtent;
+    }
+
+    // If Vulkan hasn't decided the resolution of the frames, it's up to you to decide
+    int width, height;
+
+        // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
+        // Window size == size in screen coordinates (logical units)
+        // Framebuffer size == size in actual pixels that the GPU renders to
+    glfwGetFramebufferSize(window, &width, &height);
+
+    // Force the width and height the framebuffer is asking for into Vulkan's allowed range
+    return {
+        std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width), // Clamp width to within the surface's allowed range
+        std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height) // Clamp height to within the surface's allowed range
+    };
+};
 
 
 

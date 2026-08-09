@@ -8,12 +8,13 @@
 #include <vector>
 
 // External Libraries
+#include <vulkan/vulkan_raii.hpp>
 struct GLFWwindow;
 typedef struct VkInstance_T* VkInstance;
 typedef struct VkSurfaceKHR_T* VkSurfaceKHR;
 
 class Window {
-    // Public functions
+    // Public methods
     public:
         // Constructor declaration
         explicit Window(uint32_t width, uint32_t height, const char* title);
@@ -35,6 +36,9 @@ class Window {
 
         // Create the surface that Vulkan will use
         VkSurfaceKHR createSurface(VkInstance instance) const;
+
+        // Choose the swap extent (resolution) that the Swapchain will use
+        vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) const;
     
     // Private variables
     private:
