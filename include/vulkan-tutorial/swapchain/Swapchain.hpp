@@ -27,6 +27,9 @@ class Swapchain {
         // Get the swapchain extent
         const vk::Extent2D& getSwapchainExtent() const;
 
+        // Get the swapchain surface format
+        const vk::SurfaceFormatKHR& getSwapchainSurfaceFormat() const;
+
     // Private methods
     private:
         // Create the logical device

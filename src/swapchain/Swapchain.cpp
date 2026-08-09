@@ -77,8 +77,13 @@ Swapchain::~Swapchain() {}
 const vk::raii::SwapchainKHR& Swapchain::getSwapchain() const {
     return swapchain;
 }
+
 const vk::Extent2D& Swapchain::getSwapchainExtent() const {
     return swapchainExtent;
+}
+
+const vk::SurfaceFormatKHR& Swapchain::getSwapchainSurfaceFormat() const {
+    return swapchainSurfaceFormat;
 }
 
 

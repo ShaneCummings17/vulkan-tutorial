@@ -46,9 +46,10 @@ namespace {
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 GraphicsPipeline::GraphicsPipeline(
     const vk::raii::Device &logicalDevice,
-    const vk::Extent2D &swapChainExtent
+    const vk::Extent2D &swapChainExtent,
+    const vk::SurfaceFormatKHR &swapchainSurfaceFormat
 ) {
-    createGraphicsPipeline(logicalDevice, swapChainExtent);
+    createGraphicsPipeline(logicalDevice, swapChainExtent, swapchainSurfaceFormat);
 }
 
 GraphicsPipeline::~GraphicsPipeline() {}
@@ -56,13 +57,17 @@ GraphicsPipeline::~GraphicsPipeline() {}
 
 
 /**** PUBLIC METHODS *****/
+const vk::raii::Pipeline& GraphicsPipeline::getGraphicsPipeline() const {
+    return graphicsPipeline;
+}
 
 
 
 /**** Private METHODS *****/
 void GraphicsPipeline::createGraphicsPipeline(
     const vk::raii::Device &logicalDevice,
-    const vk::Extent2D &swapChainExtent
+    const vk::Extent2D &swapChainExtent,
+    const vk::SurfaceFormatKHR &swapchainSurfaceFormat
 ) {
     // STEP #1: Define the shader modules
     // Load shader code file
@@ -92,15 +97,7 @@ void GraphicsPipeline::createGraphicsPipeline(
     };
 
 
-    // STEP 2: Define the dynamic pipeline states
-    std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-    vk::PipelineDynamicStateCreateInfo dynamicState{
-        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-        .pDynamicStates = dynamicStates.data()
-    };
-
-
-    // STEP #3: Define the fixed function pipeline states
+    // STEP #2: Define the fixed function pipeline states
     // Describe the format of the vertex data that will be passed to the vertex shader
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo; // Ignore for now as we aren't using a true vertex buffer
 
@@ -146,10 +143,58 @@ void GraphicsPipeline::createGraphicsPipeline(
         .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
     };
 
+    vk::PipelineColorBlendStateCreateInfo colorBlending{
+        .logicOpEnable = vk::False,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment
+    };
+
+
+    // STEP 3: Setup dynamic rendering
+    std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    vk::PipelineDynamicStateCreateInfo dynamicState{
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
     // Define the pipeline layout
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
         .setLayoutCount = 0,
         .pushConstantRangeCount = 0
     };
     pipelineLayout = vk::raii::PipelineLayout(logicalDevice, pipelineLayoutInfo);
+
+    // We'll be using one color attachment with the format of our swap chain images
+    vk::PipelineRenderingCreateInfo pPipelineRenderingCreateInfo{
+        .colorAttachmentCount = 1,
+        .pColorAttachmentFormats = &swapchainSurfaceFormat.format
+    };
+
+    // Create the structure chain
+    vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = {
+        {
+            .stageCount = 2,
+            .pStages = shaderStages,
+            .pVertexInputState = &vertexInputInfo,
+            .pInputAssemblyState = &inputAssembly,
+            .pViewportState = &viewportState,
+            .pRasterizationState = &rasterizer,
+            .pMultisampleState = &multisampling,
+            .pColorBlendState = &colorBlending,
+            .pDynamicState = &dynamicState,
+            .layout = pipelineLayout,
+            .renderPass = nullptr                       // Using dynamic rendering, so traditional render pass is not needed
+        },
+        {
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &swapchainSurfaceFormat.format
+        }
+    };
+
+    graphicsPipeline = vk::raii::Pipeline(
+        logicalDevice,
+        nullptr, // Refrences an optional PipelineCache object; used to store and reuse data relevant to pipeline creation across multiple calls
+        pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>()
+    );
 }

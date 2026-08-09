@@ -55,7 +55,7 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     swapchain = std::make_unique<Swapchain>(physicalDevice->getPhysicalDevice(), surface, window, logicalDevice->getLogicalDevice());
 
     // Create the graphics pipeline
-    graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent());
+    graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
 
 }
 
