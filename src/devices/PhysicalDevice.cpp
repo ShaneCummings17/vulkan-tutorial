@@ -1,5 +1,4 @@
 #include <vulkan-tutorial/devices/PhysicalDevice.hpp>
-#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
 
 // Standard C++ Libraries
 #include <algorithm>
@@ -85,7 +84,7 @@ PhysicalDevice::~PhysicalDevice() {}
 
 
 /***** PUBLIC METHODS *****/
-const vk::raii::PhysicalDevice PhysicalDevice::getPhysicalDevice() const {
+const vk::raii::PhysicalDevice& PhysicalDevice::getPhysicalDevice() const {
     return physicalDevice;
 }
 

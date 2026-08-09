@@ -10,6 +10,7 @@
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
 #include <vulkan-tutorial/devices/PhysicalDevice.hpp>
+#include <vulkan-tutorial/devices/LogicalDevice.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -55,5 +56,6 @@ class Vulkan {
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will be rendered; connects the Vulkan API to the window
-        std::unique_ptr<PhysicalDevice> physicalDevice; // The logical device the program is running on; i.e., the application's interface to the hardware
+        std::unique_ptr<PhysicalDevice> physicalDevice; // The hardware the program is running against
+        std::unique_ptr<LogicalDevice> logicalDevice; // The logical device the program is running on; i.e., the application's interface to the hardware
 };

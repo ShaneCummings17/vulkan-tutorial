@@ -17,6 +17,7 @@ add_executable(VulkanTutorial
     src/window/Window.cpp
     src/vulkan-api/Vulkan.cpp
     src/devices/PhysicalDevice.cpp
+    src/devices/LogicalDevice.cpp
 )
 
 # External dependencies

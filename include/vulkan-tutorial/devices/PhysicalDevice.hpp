@@ -15,12 +15,12 @@ class PhysicalDevice {
         // Destructor declaration
         ~PhysicalDevice();
 
-        // Get a pointer to the current PhysicalDevice object
-        const vk::raii::PhysicalDevice getPhysicalDevice() const;
+        // Get the current PhysicalDevice object
+        const vk::raii::PhysicalDevice& getPhysicalDevice() const;
 
     // Private functions
     private:
-        // Return the physical device
+        // Pick the physical device
         void pickPhysicalDevice(const vk::raii::Instance &instance);
 
 

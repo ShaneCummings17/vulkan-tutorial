@@ -47,6 +47,9 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
 
     // Pick the Physical Device
     physicalDevice = std::make_unique<PhysicalDevice>(instance);
+
+    // Create the Logical Device
+    logicalDevice = std::make_unique<LogicalDevice>(physicalDevice->getPhysicalDevice(), surface);
 }
 
 Vulkan::~Vulkan() {};
