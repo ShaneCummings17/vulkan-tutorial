@@ -19,6 +19,7 @@ add_executable(${PROJECT_NAME}
     src/devices/PhysicalDevice.cpp
     src/devices/LogicalDevice.cpp
     src/swapchain/Swapchain.cpp
+    src/graphics-pipeline/GraphicsPipeline.cpp
 )
 
 # External dependencies
@@ -39,3 +40,55 @@ target_link_libraries(${PROJECT_NAME}
         Vulkan::Vulkan
         glfw
 )
+
+# Shaders
+find_program(SLANGC_EXECUTABLE slangc REQUIRED)
+function(add_slang_shader_target TARGET)
+    cmake_parse_arguments(
+        SHADER
+        ""
+        ""
+        "SOURCES"
+        ${ARGN}
+    )
+
+    # Source shaders
+    set(SHADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+
+    # Compiled shaders
+    set(SHADERS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+    set(ENTRY_POINTS
+        -entry vertMain
+        -entry fragMain
+    )
+
+    add_custom_command(
+        OUTPUT ${SHADERS_BINARY_DIR}/slang.spv
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                ${SHADERS_BINARY_DIR}
+        COMMAND ${SLANGC_EXECUTABLE}
+                ${SHADER_SOURCES}
+                -target spirv
+                -profile spirv_1_4
+                -emit-spirv-directly
+                -fvk-use-entrypoint-name
+                ${ENTRY_POINTS}
+                -o ${SHADERS_BINARY_DIR}/slang.spv
+        DEPENDS ${SHADER_SOURCES}
+        COMMENT "Compiling Slang shaders"
+        VERBATIM
+    )
+
+    add_custom_target(
+        ${TARGET}
+        DEPENDS ${SHADERS_BINARY_DIR}/slang.spv
+    )
+endfunction()
+
+add_slang_shader_target(Shaders
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vertex-shader.slang
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fragment-shader.slang
+)
+add_dependencies(${PROJECT_NAME} Shaders)

@@ -24,6 +24,9 @@ class Swapchain {
         // Get the swapchain object
         const vk::raii::SwapchainKHR& getSwapchain() const;
 
+        // Get the swapchain extent
+        const vk::Extent2D& getSwapchainExtent() const;
+
     // Private methods
     private:
         // Create the logical device
