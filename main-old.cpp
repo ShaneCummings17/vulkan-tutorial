@@ -517,7 +517,7 @@ class HelloTriangleApplication {
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
-        vk::raii::PhysicalDevice  physicalDevice = nullptr; // The hardware the program is running against
+        vk::raii::PhysicalDevice physicalDevice = nullptr; // The hardware the program is running against
         vk::raii::Device device = nullptr; // The logical device the program is running on; i.e., the application's interface to the hardware
         vk::raii::Queue graphicsQueue = nullptr; // A pointer to the graphics queue leveraged by the logical device
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will bne rendered; connects the Vulkan API to the GLFW window

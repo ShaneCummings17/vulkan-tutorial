@@ -1,0 +1,30 @@
+#pragma once
+
+// Macros
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+
+// External Libraries
+#include <vulkan/vulkan_raii.hpp>
+
+class PhysicalDevice {
+    // Public functions
+    public:
+        // Constructor declaration
+        explicit PhysicalDevice(const vk::raii::Instance &instance);
+
+        // Destructor declaration
+        ~PhysicalDevice();
+
+        // Get a pointer to the current PhysicalDevice object
+        const vk::raii::PhysicalDevice getPhysicalDevice() const;
+
+    // Private functions
+    private:
+        // Return the physical device
+        void pickPhysicalDevice(const vk::raii::Instance &instance);
+
+
+    // Private variables
+    private:
+        vk::raii::PhysicalDevice physicalDevice = nullptr; // The hardware the program is running against
+};

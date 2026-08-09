@@ -16,7 +16,7 @@ class Window {
     // Public functions
     public:
         // Constructor declaration
-        Window(uint32_t width, uint32_t height, const char* title);
+        explicit Window(uint32_t width, uint32_t height, const char* title);
 
         // Destructor declaration
         ~Window();

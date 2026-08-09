@@ -36,14 +36,17 @@ namespace {
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
-Vulkan::Vulkan(const char *appName, const char *engine, const Window *window) :
+Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     appName(appName),
     engine(engine),
     window(window)
 {
-    createInstance();
-    setupDebugMessenger();
-    initSurface();
+    createInstance(); // Create Vulkan API instance
+    setupDebugMessenger(); // Setup debug validation layers
+    initSurface(); // Initialize the surface the Vulkan API will be rendering to
+
+    // Pick the Physical Device
+    physicalDevice = std::make_unique<PhysicalDevice>(instance);
 }
 
 Vulkan::~Vulkan() {};
@@ -131,7 +134,7 @@ void Vulkan::createInstance() {
 
 std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
     // Get the required global instance extensions from the window; basically tell Vulkan how to interface w/the window on the OS the binary is running on
-    std::vector<const char *> extensions = window->getRequiredWindowExtensions();
+    std::vector<const char *> extensions = window.getRequiredWindowExtensions();
 
     if (enableValidationLayers) { // If validation layers are enabled, include the debug messenger extension as required
         extensions.push_back(vk::EXTDebugUtilsExtensionName);
@@ -171,7 +174,7 @@ void Vulkan::setupDebugMessenger() {
 // Initialize surface
 void Vulkan::initSurface() {
     // Grab the surface from the window object
-    VkSurfaceKHR _surface = window->createSurface(*instance);
+    VkSurfaceKHR _surface = window.createSurface(*instance);
 
     // Wrap the raw Vulkan surface handle in a RAII C++ object so we don't gotta remember to delete it later
     // Death to memory leaks!

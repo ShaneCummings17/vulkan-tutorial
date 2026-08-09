@@ -5,7 +5,7 @@
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Application::Application() :
     window(800, 600, "Vulkan"),
-    vulkan("Hello Triangle", "No Engine", &window)
+    vulkan("Hello Triangle", "No Engine", window)
 {}
 
 Application::~Application() {}

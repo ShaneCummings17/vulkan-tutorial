@@ -5,9 +5,11 @@
 
 // Standard C++ libraries
 #include <vector>
+#include <memory>
 
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
+#include <vulkan-tutorial/devices/PhysicalDevice.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -16,10 +18,10 @@ class Vulkan {
     // Public functions
     public:
         // Constructor declaration
-        Vulkan(
+        explicit Vulkan(
             const char *appName,
             const char *engine,
-            const Window *window
+            const Window &window
         );
 
         // Destructor declaration
@@ -48,9 +50,10 @@ class Vulkan {
     private:
         const char *appName; // Has to be const char* because of Vulkan API requirements
         const char *engine;
-        const Window *window;
+        const Window& window;
         vk::raii::Context context;
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will be rendered; connects the Vulkan API to the window
+        std::unique_ptr<PhysicalDevice> physicalDevice; // The logical device the program is running on; i.e., the application's interface to the hardware
 };
