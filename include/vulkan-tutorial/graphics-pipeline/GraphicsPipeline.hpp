@@ -9,7 +9,7 @@ class GraphicsPipeline {
         // Constructor declaration
         explicit GraphicsPipeline(
             const vk::raii::Device &logicalDevice,
-            const vk::Extent2D &swapChainExtent,
+            const vk::Extent2D &swapchainExtent,
             const vk::SurfaceFormatKHR &swapchainSurfaceFormat
         );
 
@@ -24,7 +24,7 @@ class GraphicsPipeline {
     private:
         void createGraphicsPipeline(
             const vk::raii::Device &logicalDevice,
-            const vk::Extent2D &swapChainExtent,
+            const vk::Extent2D &swapchainExtent,
             const vk::SurfaceFormatKHR &swapchainSurfaceFormat
         );
 
