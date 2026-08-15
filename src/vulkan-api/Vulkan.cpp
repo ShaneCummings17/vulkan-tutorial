@@ -58,7 +58,7 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
 
     // Create the command pool and buffer
-    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex(), swapchain, graphicsPipeline->getGraphicsPipeline());
+    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex(), *swapchain, graphicsPipeline->getGraphicsPipeline());
 
 }
 
