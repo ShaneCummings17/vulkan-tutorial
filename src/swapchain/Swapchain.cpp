@@ -87,6 +87,14 @@ const vk::SurfaceFormatKHR& Swapchain::getSwapchainSurfaceFormat() const {
     return swapchainSurfaceFormat;
 }
 
+const std::vector<vk::Image>& Swapchain::getSwapchainImages() const {
+    return swapchainImages;
+}
+
+const std::vector<vk::raii::ImageView>& Swapchain::getSwapchainImageViews() const {
+    return swapchainImageViews;
+}
+
 
 
 /***** PRIVATE METHODS *****/

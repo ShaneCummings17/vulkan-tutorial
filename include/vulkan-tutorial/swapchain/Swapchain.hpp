@@ -30,6 +30,12 @@ class Swapchain {
         // Get the swapchain surface format
         const vk::SurfaceFormatKHR& getSwapchainSurfaceFormat() const;
 
+        // Get the swapchain images
+        const std::vector<vk::Image>& getSwapchainImages() const;
+
+        // Get the swapchain image views
+        const std::vector<vk::raii::ImageView>& getSwapchainImageViews() const;
+
     // Private methods
     private:
         // Create the logical device
