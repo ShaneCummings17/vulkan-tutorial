@@ -16,6 +16,13 @@ class Application {
         // Run the application
         void run();
 
+
+    // Private methods
+    public:
+        // Draw each frame
+        void drawFrame();
+
+
     // Private variables
     private:
         Window window;

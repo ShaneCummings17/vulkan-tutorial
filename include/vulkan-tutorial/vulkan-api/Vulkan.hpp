@@ -11,6 +11,7 @@
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
 #include <vulkan-tutorial/graphics-pipeline/GraphicsPipeline.hpp>
 #include <vulkan-tutorial/commands/Commands.hpp>
+#include <vulkan-tutorial/sync/SyncObjects.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -28,6 +29,22 @@ class Vulkan {
         // Destructor declaration
         ~Vulkan();
 
+        // Expose the logical device object
+        const LogicalDevice& getLogicalDeviceObject() const;
+
+        // Expose the sync objects
+        const SyncObjects& getSyncObjects() const;
+
+        // Expose the swapchain object
+        const Swapchain& getSwapchainObject() const;
+
+        // Expose the commands object
+        const Commands& getCommandsObject() const;
+
+        // Expose the Graphics Pipeline object
+        const GraphicsPipeline& getGraphicsPipelineObject() const;
+
+
     // Private methods
     private:
         // Create the Vulkan instance
@@ -37,11 +54,9 @@ class Vulkan {
         // Get required instance extensions
         std::vector<const char*> getRequiredInstanceExtensions();
 
-
         // Create debug hooks
         // Set up the debug messages (if running in debug mode)
         void setupDebugMessenger();
-
 
         // Initialize Surface
         void initSurface();
@@ -61,4 +76,5 @@ class Vulkan {
         std::unique_ptr<Swapchain> swapchain; // The swapchain used to render frames
         std::unique_ptr<GraphicsPipeline> graphicsPipeline; // The graphics pipeline
         std::unique_ptr<Commands> commands; // The commands object containing both the commandPool and the commandBuffer
+        std::unique_ptr<SyncObjects> syncObjects; // The semaphores and fences used for synchronization
 };

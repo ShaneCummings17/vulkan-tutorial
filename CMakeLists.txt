@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME}
     src/swapchain/Swapchain.cpp
     src/graphics-pipeline/GraphicsPipeline.cpp
     src/commands/Commands.cpp
+    src/sync/SyncObjects.cpp
 )
 
 # External dependencies

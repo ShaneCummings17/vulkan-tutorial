@@ -65,6 +65,20 @@ void LogicalDevice::createLogicalDevice(const vk::raii::PhysicalDevice &physical
 
 
     // STEP #4: Create the info for the queue that will be passed to the Vulkan instance
+    // Enable synchronization2 features
+    vk::PhysicalDeviceSynchronization2Features synchronization2Features {
+        .synchronization2 = vk::True
+    };
+
+    // Enable dynamic rendering features
+    vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{
+        .dynamicRendering = vk::True
+    };
+
+    // Chain the synchronization and dynamic rendering features structs together
+    synchronization2Features.pNext = &dynamicRenderingFeatures;
+
+    // Create info
     vk::DeviceQueueCreateInfo deviceQueueCreateInfo {
         .queueFamilyIndex = queueIndex,
         .queueCount = 1,
@@ -89,7 +103,10 @@ void LogicalDevice::createLogicalDevice(const vk::raii::PhysicalDevice &physical
     > featureChain = {
         {},                                 // vk::PhysicalDevicesFeatures2 (empty; come back later)
         {.shaderDrawParameters = true},     // Enable shader draw parameters from Vulkan 1.1
-        {.dynamicRendering = true},         // Enable dynamic rendering from Vulkan 1.3 (i.e., no VkFrameBuffer object)
+        {
+            .synchronization2 = true,       // Enable synchronization2
+            .dynamicRendering = true        // Enable dynamic rendering from Vulkan 1.3 (i.e., no VkFrameBuffer object)
+        },         
         {.extendedDynamicState = true}      // Enable extended dynamic state from the extension; lets us change specific pipeline settings on the fly during execution
     };
 

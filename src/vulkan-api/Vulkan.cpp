@@ -58,8 +58,10 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
 
     // Create the command pool and buffer
-    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex(), *swapchain, graphicsPipeline->getGraphicsPipeline());
+    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex());
 
+    // Create the sync objects
+    syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice(), commands->getCommandBuffer(0), swapchain->getSwapchain());
 }
 
 Vulkan::~Vulkan() {};
@@ -67,6 +69,30 @@ Vulkan::~Vulkan() {};
 
 
 /***** PUBLIC METHODS *****/
+// Expose the logical device
+const LogicalDevice& Vulkan::getLogicalDeviceObject() const {
+    return *logicalDevice;
+}
+
+// Expose the syncObjects
+const SyncObjects& Vulkan::getSyncObjects() const {
+    return *syncObjects;
+}
+
+// Expose the swapchain object
+const Swapchain& Vulkan::getSwapchainObject() const {
+    return *swapchain;
+}
+
+// Expose the commands object
+const Commands& Vulkan::getCommandsObject() const {
+    return *commands;
+}
+
+// Expose the graphics pipeline object
+const GraphicsPipeline& Vulkan::getGraphicsPipelineObject() const {
+    return *graphicsPipeline;
+}
 
 
 
