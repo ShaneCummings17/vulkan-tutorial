@@ -23,6 +23,8 @@ void Application::run() {
         window.pollEvents();
         drawFrame();
     }
+
+    vulkan.getLogicalDeviceObject().getLogicalDevice().waitIdle();
 }
 
 
