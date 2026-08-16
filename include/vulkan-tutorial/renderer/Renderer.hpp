@@ -1,6 +1,9 @@
 #pragma once
 
-// Internal libraries
+// Standard C++ Libraries
+#include <cstdint>
+
+// Internal Libraries
 #include <vulkan-tutorial/window/Window.hpp>
 #include <vulkan-tutorial/vulkan-context/VulkanContext.hpp>
 #include <vulkan-tutorial/devices/Device.hpp>
@@ -16,7 +19,7 @@ class Renderer {
         explicit Renderer(
             const char *appName,
             const char *engine,
-            const Window &window
+            Window &window
         );
 
         void drawFrame();
@@ -39,4 +42,7 @@ class Renderer {
         GraphicsPipeline graphicsPipeline;
         Commands commands;
         SyncObjects syncObjects;
+        Window& window;
+
+        uint32_t frameIndex = 0; // The frame we're on
 };

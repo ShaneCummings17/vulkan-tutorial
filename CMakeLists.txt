@@ -93,3 +93,5 @@ add_slang_shader_target(Shaders
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shaders.slang
 )
 add_dependencies(${PROJECT_NAME} Shaders)
+
+add_definitions(-DVULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS)

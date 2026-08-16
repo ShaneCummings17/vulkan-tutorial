@@ -3,7 +3,6 @@
 // Standard C++ libraries
 #include <vector>
 #include <memory>
-#include <cstdint>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -11,25 +10,21 @@
 // Global Config
 #include <vulkan-tutorial/core/Config.hpp>
 
-// Local variables
-namespace {
-    uint32_t frameIndex = 0; // Keep track of what frame we're on
-}
-
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Renderer::Renderer(
     const char *appName,
     const char *engine,
-    const Window &window
+    Window &window
 ) :
     vulkan(appName, engine, window),
     device(vulkan.getInstance(), vulkan.getSurface()),
     swapchain(device, vulkan.getSurface(), window),
     graphicsPipeline(device.getLogicalDevice(), swapchain.getSwapchainExtent(), swapchain.getSwapchainSurfaceFormat()),
     commands(device),
-    syncObjects(device.getLogicalDevice(), swapchain.getSwapchainImages())
+    syncObjects(device.getLogicalDevice(), swapchain.getSwapchainImages()),
+    window(window)
 {};
 
 
@@ -51,9 +46,6 @@ void Renderer::drawFrame() {
         throw std::runtime_error("failed to wait for fence!");
     };
 
-    // Reset fence after result
-    device.getLogicalDevice().resetFences(*syncObjects.getInFlightFences()[frameIndex]);;
-
     // Grab an image from the framebuffer after the previous frame has finished
     auto [result, imageIndex] = swapchain.getSwapchain().acquireNextImage(
         UINT64_MAX,                                                         // Disable timeout for image to become available
@@ -61,7 +53,23 @@ void Renderer::drawFrame() {
         nullptr                                                             // Don't bother signaling a fence
     );
 
+    // Resize window if necessary
+    if (result == vk::Result::eErrorOutOfDateKHR) {                         // Swapchain is no longer compatible with window size; has a resize occurred?
+        swapchain.recreateSwapchain();
+        return;
+    }
+    
+    // Error handling for window resize
+    if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+        assert(result == vk::Result::eTimeout || result == vk::Result::eNotReady);
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    // Reset fence after result; wait to ensure we are submitting work to the GPU
+    device.getLogicalDevice().resetFences(*syncObjects.getInFlightFences()[frameIndex]);
+
     // Record all the commands we want sent to the buffer
+    commands.getCommandBuffer(frameIndex).reset();
     recordCommandBuffer(commands.getCommandBuffer(frameIndex), imageIndex);
 
     // Submit the command buffer to the GPU!
@@ -79,8 +87,7 @@ void Renderer::drawFrame() {
         .pSignalSemaphores = &*syncObjects.getRenderFinishedSemaphores()[imageIndex]
     };
 
-    const auto &queue = device.getGraphicsQueue();
-    queue.submit(submitInfo, *syncObjects.getInFlightFences()[frameIndex]);
+    device.getGraphicsQueue().submit(submitInfo, *syncObjects.getInFlightFences()[frameIndex]);
 
     // Submit the result back to the swapchain and have it eventually show up on the screen
     const vk::PresentInfoKHR presentInfoKHR{
@@ -91,7 +98,15 @@ void Renderer::drawFrame() {
         .pImageIndices = &imageIndex
     };
 
-    result = queue.presentKHR(presentInfoKHR);
+    result = device.getGraphicsQueue().presentKHR(presentInfoKHR);
+
+    // Test if the swapchain is out of data after we acquire our image; if so, recreate, if not, report success
+    if ((result == vk::Result::eSuboptimalKHR) || (result == vk::Result::eErrorOutOfDateKHR) || window.wasFramebufferResized()) {
+        window.resetFramebufferResized();
+        swapchain.recreateSwapchain();
+    } else {
+        assert(result == vk::Result::eSuccess);
+    }
 
     // Advance to the next frame
     frameIndex = (frameIndex + 1) % Config::MAX_FRAMES_IN_FLIGHT;

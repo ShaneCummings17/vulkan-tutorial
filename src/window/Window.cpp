@@ -12,12 +12,11 @@
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Window::Window(uint32_t width, uint32_t height, const char* title)
 {
-    glfwInit(); // Create a glfw instance so we can interact with the API
     if (!glfwInit()) { // Ensure GLFW comes online
         throw std::runtime_error("failed to initialize GLFW");
     }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Tell glfw to not create an OpenGL context
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Disable resizing of window
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // Enable resizing of window
 
     // Initialize the window; fourth param specifies monitor, next param is OpenGL specific so we don't care
     window = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -25,6 +24,9 @@ Window::Window(uint32_t width, uint32_t height, const char* title)
         glfwTerminate();
         throw std::runtime_error("failed to create GLFW window");
     }
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
 Window::~Window() {
@@ -80,9 +82,9 @@ vk::Extent2D Window::chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabili
     // If Vulkan hasn't decided the resolution of the frames, it's up to you to decide
     int width, height;
 
-        // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
-        // Window size == size in screen coordinates (logical units)
-        // Framebuffer size == size in actual pixels that the GPU renders to
+    // Get the actual pixel dimensions of the framebuffer; may not be the same as window size
+    // Window size == size in screen coordinates (logical units)
+    // Framebuffer size == size in actual pixels that the GPU renders to
     glfwGetFramebufferSize(window, &width, &height);
 
     // Force the width and height the framebuffer is asking for into Vulkan's allowed range
@@ -93,5 +95,35 @@ vk::Extent2D Window::chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabili
 };
 
 
+// Wait until the framebuffer is restored
+void Window::waitUntilFramebufferRestored() const {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+};
+
+bool Window::wasFramebufferResized() const {
+    return framebufferResized;
+}
+
+void Window::resetFramebufferResized() {
+    framebufferResized = false;
+}
+
+
 
 /***** PRIVATE METHODS *****/
+void Window::framebufferResizeCallback(
+    GLFWwindow* window,
+    int width,
+    int height
+) {
+    auto* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    if (self) {
+        self->framebufferResized = true;    // Set the framebuffer to true to alert
+    }
+};
