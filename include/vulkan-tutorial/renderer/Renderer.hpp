@@ -23,6 +23,14 @@ class Renderer {
         void waitIdle();
     
     
+    // Private methods
+    private:
+        void recordCommandBuffer(
+            const vk::raii::CommandBuffer& commandBuffer,
+            uint32_t imageIndex
+        );
+    
+    
     // Private variables
     private:
         VulkanContext vulkan;
