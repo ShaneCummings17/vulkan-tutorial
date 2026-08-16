@@ -6,15 +6,12 @@
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Commands::Commands(
-    const vk::raii::Device &logicalDevice,
-    uint32_t queueIndex
-) : logicalDevice(logicalDevice)
+    const Device &device
+) : device(device)
 {
-    createCommandPool(queueIndex);
+    createCommandPool();
     createCommandBuffer();
 };
-
-Commands::~Commands() {}
 
 
 
@@ -31,108 +28,21 @@ const vk::raii::CommandBuffer& Commands::getCommandBuffer(size_t index) const {
     return commandBuffers.at(index);
 }
 
-void Commands::recordCommandBuffer(size_t commandBufferIndex, uint32_t imageIndex, const Swapchain& swapchain, const vk::raii::Pipeline& graphicsPipeline) const {
-    // Variables for later
-    vk::Extent2D swapchainExtent = swapchain.getSwapchainExtent();
-
-
-    // STEP #1: Begin recording to command buffer
-    // Get the specified command buffer by index
-    const vk::raii::CommandBuffer &commandBuffer = commandBuffers.at(commandBufferIndex);
-    commandBuffer.begin({});
-
-
-    // STEP #2: Transition the image layout to one that is suitable for rendering
-    // Transition the image layout from vk::ImageLayout::eUndefined to vk::ImageLayout::eColorAttachmentOptional
-    auto image = swapchain.getSwapchainImages()[imageIndex];
-    transitionImageLayout(
-        image,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        {},
-        vk::AccessFlagBits2::eColorAttachmentWrite,
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-        commandBuffer
-    );
-
-
-    // STEP #3: Set up the color attachment
-    vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
-    vk::RenderingAttachmentInfo attachmentInfo = {
-        .imageView = swapchain.getSwapchainImageViews()[imageIndex],    // The image view to render to
-        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,        // The layout the image will be in during rendering
-        .loadOp = vk::AttachmentLoadOp::eClear,                         // What to do with the image before rendering (clear to black)
-        .storeOp = vk::AttachmentStoreOp::eStore,                       // What to do with the image after rendering (store for later use)
-        .clearValue = clearColor                                        // The color black
-    };
-
-
-    // STEP #4: Setup the rendering info
-    vk::RenderingInfo renderingInfo = {
-        .renderArea = {                                                 // Define size of the render area
-            .offset = {0, 0},
-            .extent = swapchainExtent
-        },
-        .layerCount = 1,                                                // Number of layers to render to; 1 for non-layered image
-        .colorAttachmentCount = 1,                                      // Number of color attachments
-        .pColorAttachments = &attachmentInfo                            // The color attachment to render to
-    };
-
-
-    // STEP #5: Begin rendering
-    commandBuffer.beginRendering(renderingInfo);
-
-    
-    // STEP #6: Bind the graphics pipeline
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
-
-
-    // STEP #7: Set values for dynamic rendering
-    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchainExtent.width), static_cast<float>(swapchainExtent.height), 0.0f, 1.0f));
-    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchainExtent));
-
-
-    // STEP #8: Issue the draw commmand for the triangle!
-    commandBuffer.draw(3, 1, 0, 0);
-
-
-    // STEP #9: End rendering
-    commandBuffer.endRendering();
-
-
-    // STEP #10: Transition the image layourt BACK to vk::ImageLayout::ePresentSrcKHR so it can be presented to the screen
-    transitionImageLayout(
-        image,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        vk::ImageLayout::ePresentSrcKHR,
-        vk::AccessFlagBits2::eColorAttachmentWrite,
-        {},
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-        vk::PipelineStageFlagBits2::eBottomOfPipe,
-        commandBuffer
-    );
-
-
-    // STEP #11: Finish recording the command buffer
-    commandBuffer.end();
-};
-
 
 
 /**** Private METHODS *****/
 // Define command pool
 // CPs manage the memory that is used to store the buffers
 // CBs are allocated from CPs
-void Commands::createCommandPool(uint32_t queueIndex) {
+void Commands::createCommandPool() {
     // Define the configuration info for the command pool
     vk::CommandPoolCreateInfo poolInfo{
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,        // Allow command buffers to be rerecorded individually; without this flag they all have to be reset together
-        .queueFamilyIndex = queueIndex                                      // The device queue the commands will be submitted to
+        .queueFamilyIndex = device.getQueueIndex()                                      // The device queue the commands will be submitted to
     };
 
     // Create the command pool and tie it to the logical Device
-    commandPool = vk::raii::CommandPool(logicalDevice, poolInfo);
+    commandPool = vk::raii::CommandPool(device.getLogicalDevice(), poolInfo);
 }
 
 // Define command buffer
@@ -148,7 +58,7 @@ void Commands::createCommandBuffer() {
     };
 
     // Allocate a new command buffer
-    auto commandBuffer = vk::raii::CommandBuffers(logicalDevice, allocInfo);
+    auto commandBuffer = vk::raii::CommandBuffers(device.getLogicalDevice(), allocInfo);
 
     // Insert the command buffer into the command_buffers object
     commandBuffers.insert(

@@ -1,7 +1,5 @@
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
 
-#include <vulkan-tutorial/devices/LogicalDevice.hpp>
-
 // Standard C++ Libraries
 #include <cstdint>
 #include <vector>
@@ -60,17 +58,14 @@ namespace {
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Swapchain::Swapchain(
-    const vk::raii::PhysicalDevice &physicalDevice,
-    const vk::raii::SurfaceKHR &surface,
-    const Window &window,
-    const vk::raii::Device &logicalDevice
-) : logicalDevice(logicalDevice)
+    const Device& device,
+    const vk::raii::SurfaceKHR& surface,
+    const Window& window
+) : device(device)
 {
-    createSwapchain(physicalDevice, surface, window);
+    createSwapchain(surface, window);
     createImageViews();
 }
-
-Swapchain::~Swapchain() {}
 
 
 
@@ -99,11 +94,13 @@ const std::vector<vk::raii::ImageView>& Swapchain::getSwapchainImageViews() cons
 
 /***** PRIVATE METHODS *****/
 void Swapchain::createSwapchain(
-    const vk::raii::PhysicalDevice &physicalDevice,
     const vk::raii::SurfaceKHR &surface,
     const Window &window
 )
 {
+    // Get the physical device
+    const auto& physicalDevice = device.getPhysicalDevice();
+
     // Get the surface capabilities (i.e., what does the window system allow you to do with a swapchain)
     vk::SurfaceCapabilitiesKHR capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 
@@ -139,7 +136,7 @@ void Swapchain::createSwapchain(
         .oldSwapchain = nullptr                                     // The previous swap chain this one is created from; useful for window resizing when the swap chain needs to be recreated from scratch
     };
 
-    swapchain = vk::raii::SwapchainKHR(logicalDevice, swapChainCreateInfo);
+    swapchain = vk::raii::SwapchainKHR(device.getLogicalDevice(), swapChainCreateInfo);
     swapchainImages = swapchain.getImages();
 }
 
@@ -165,6 +162,6 @@ void Swapchain::createImageViews() {
     // We'll render directly to these blocks as our output
     for (auto &image : swapchainImages) {
         imageViewCreateInfo.image = image;
-        swapchainImageViews.emplace_back(logicalDevice, imageViewCreateInfo); // Add object to the end of the vector
+        swapchainImageViews.emplace_back(device.getLogicalDevice(), imageViewCreateInfo); // Add object to the end of the vector
     };
 }

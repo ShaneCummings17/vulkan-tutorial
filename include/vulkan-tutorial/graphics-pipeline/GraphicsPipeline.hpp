@@ -13,9 +13,6 @@ class GraphicsPipeline {
             const vk::SurfaceFormatKHR &swapchainSurfaceFormat
         );
 
-        // Destructor declaration
-        ~GraphicsPipeline();
-
         // Get graphics pipeline
         const vk::raii::Pipeline& getGraphicsPipeline() const;
 

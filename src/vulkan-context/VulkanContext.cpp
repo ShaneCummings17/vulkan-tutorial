@@ -1,4 +1,4 @@
-#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
+#include <vulkan-tutorial/vulkan-context/VulkanContext.hpp>
 
 // Standard C++ Libraries
 #include <iostream>
@@ -36,69 +36,47 @@ namespace {
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
-Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
-    appName(appName),
-    engine(engine),
+VulkanContext::VulkanContext(
+    const char *appName,
+    const char *engine,
+    const Window &window
+) :
     window(window)
 {
-    createInstance(); // Create Vulkan API instance
-    setupDebugMessenger(); // Setup debug validation layers
-    initSurface(); // Initialize the surface the Vulkan API will be rendering to
+    // Create Vulkan API instance
+    createInstance(
+        appName,
+        engine
+    );
 
-    // Pick the Physical Device
-    physicalDevice = std::make_unique<PhysicalDevice>(instance);
+    // Setup debug validation layers
+    setupDebugMessenger();
 
-    // Create the Logical Device
-    logicalDevice = std::make_unique<LogicalDevice>(physicalDevice->getPhysicalDevice(), surface);
-
-    // Create the Swapchain + Image views
-    swapchain = std::make_unique<Swapchain>(physicalDevice->getPhysicalDevice(), surface, window, logicalDevice->getLogicalDevice());
-
-    // Create the graphics pipeline
-    graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
-
-    // Create the command pool and buffer
-    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex());
-
-    // Create the sync objects
-    syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice(), commands->getCommandBuffer(0), swapchain->getSwapchain());
+    // Initialize the surface the Vulkan API will be rendering to
+    initSurface();
 }
-
-Vulkan::~Vulkan() {};
 
 
 
 /***** PUBLIC METHODS *****/
-// Expose the logical device
-const LogicalDevice& Vulkan::getLogicalDeviceObject() const {
-    return *logicalDevice;
+// Expose the vulkan instance
+const vk::raii::Instance& VulkanContext::getInstance() const {
+    return instance;
 }
 
-// Expose the syncObjects
-const SyncObjects& Vulkan::getSyncObjects() const {
-    return *syncObjects;
-}
-
-// Expose the swapchain object
-const Swapchain& Vulkan::getSwapchainObject() const {
-    return *swapchain;
-}
-
-// Expose the commands object
-const Commands& Vulkan::getCommandsObject() const {
-    return *commands;
-}
-
-// Expose the graphics pipeline object
-const GraphicsPipeline& Vulkan::getGraphicsPipelineObject() const {
-    return *graphicsPipeline;
+// Expose the vulkan surface
+const vk::raii::SurfaceKHR& VulkanContext::getSurface() const {
+    return surface;
 }
 
 
 
 /***** PRIVATE METHODS *****/
 // Create the Vulkan instance
-void Vulkan::createInstance() {
+void VulkanContext::createInstance(
+    const char *appName,
+    const char *engine
+) {
     // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
     const vk::ApplicationInfo appInfo{
         .pApplicationName = appName,
@@ -171,7 +149,7 @@ void Vulkan::createInstance() {
     instance = vk::raii::Instance(context, createInfo);
 }
 
-std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
+std::vector<const char*> VulkanContext::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
     // Get the required global instance extensions from the window; basically tell Vulkan how to interface w/the window on the OS the binary is running on
     std::vector<const char *> extensions = window.getRequiredWindowExtensions();
 
@@ -184,7 +162,7 @@ std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move requi
 
 
 // Create debug hooks
-void Vulkan::setupDebugMessenger() {
+void VulkanContext::setupDebugMessenger() {
     if (!enableValidationLayers) return; // Checks if we're in debug mode; if we're not, don't even bother setting this up
 
     vk::DebugUtilsMessageSeverityFlagsEXT severityFlags( // How severe is the message? Only output debug messages for warning or above. Can add eVerbose and eInfo to increase error output.
@@ -211,7 +189,7 @@ void Vulkan::setupDebugMessenger() {
 
 
 // Initialize surface
-void Vulkan::initSurface() {
+void VulkanContext::initSurface() {
     // Grab the surface from the window object
     VkSurfaceKHR _surface = window.createSurface(*instance);
 

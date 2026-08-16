@@ -6,6 +6,7 @@
 
 // Internal Libraries
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
+#include <vulkan-tutorial/devices/Device.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -15,12 +16,8 @@ class Commands {
     public:
         // Constructor declaration
         explicit Commands(
-            const vk::raii::Device &logicalDevice,
-            uint32_t queueIndex
+            const Device& device
         );
-
-        // Destructor declaration
-        ~Commands();
 
         // Get command pool
         const vk::raii::CommandPool& getCommandPool() const;
@@ -31,18 +28,6 @@ class Commands {
         // Get a command buffer by index
         const vk::raii::CommandBuffer& getCommandBuffer(size_t index) const;
        
-        // Record the command buffer
-        void recordCommandBuffer(size_t commandBufferIndex, uint32_t imageIndex, const Swapchain& swapchain, const vk::raii::Pipeline& graphicsPipeline) const;
-
-
-    // Private methods
-    private:
-        // Create command pool
-        void createCommandPool(uint32_t queueIndex);
-
-        // Create command buffer
-        void createCommandBuffer();
-
         // Transition image layout
         void transitionImageLayout(
             vk::Image image,
@@ -56,9 +41,18 @@ class Commands {
         ) const;
 
 
+    // Private methods
+    private:
+        // Create command pool
+        void createCommandPool();
+
+        // Create command buffer
+        void createCommandBuffer();
+
+
     // Private variables
     private:
         vk::raii::CommandPool commandPool = nullptr;
         std::vector<vk::raii::CommandBuffer> commandBuffers;
-        const vk::raii::Device& logicalDevice;
+        const Device& device;
 };

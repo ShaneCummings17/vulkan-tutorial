@@ -2,7 +2,7 @@
 
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
-#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
+#include <vulkan-tutorial/renderer/Renderer.hpp>
 
 class Application {
     // Public methods
@@ -10,21 +10,12 @@ class Application {
         // Constructor declaration
         Application();
 
-        // Destructor declaration
-        ~Application();
-
         // Run the application
         void run();
-
-
-    // Private methods
-    public:
-        // Draw each frame
-        void drawFrame();
 
 
     // Private variables
     private:
         Window window;
-        Vulkan vulkan;
+        Renderer renderer;
 };

@@ -68,8 +68,6 @@ GraphicsPipeline::GraphicsPipeline(
     createGraphicsPipeline(logicalDevice, swapchainExtent, swapchainSurfaceFormat);
 }
 
-GraphicsPipeline::~GraphicsPipeline() {}
-
 
 
 /**** PUBLIC METHODS *****/

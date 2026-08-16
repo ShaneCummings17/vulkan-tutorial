@@ -15,9 +15,9 @@ add_executable(${PROJECT_NAME}
     main.cpp
     src/app/Application.cpp
     src/window/Window.cpp
-    src/vulkan-api/Vulkan.cpp
-    src/devices/PhysicalDevice.cpp
-    src/devices/LogicalDevice.cpp
+    src/vulkan-context/VulkanContext.cpp
+    src/renderer/Renderer.cpp
+    src/devices/Device.cpp
     src/swapchain/Swapchain.cpp
     src/graphics-pipeline/GraphicsPipeline.cpp
     src/commands/Commands.cpp
@@ -90,7 +90,6 @@ endfunction()
 
 add_slang_shader_target(Shaders
     SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vertex-shader.slang
-        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fragment-shader.slang
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shaders.slang
 )
 add_dependencies(${PROJECT_NAME} Shaders)

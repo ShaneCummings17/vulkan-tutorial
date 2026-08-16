@@ -4,14 +4,10 @@
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 SyncObjects::SyncObjects(
-    const vk::raii::Device &logicalDevice,
-    const vk::raii::CommandBuffer& commandBuffer,
-    const vk::raii::SwapchainKHR& swapchain
+    const vk::raii::Device& logicalDevice
 ) {
     createSyncObjects(logicalDevice);
 }
-
-SyncObjects::~SyncObjects() {}
 
 
 

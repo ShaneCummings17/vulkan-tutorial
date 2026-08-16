@@ -10,17 +10,21 @@
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
-Window::Window(uint32_t width, uint32_t height, const char* title) :
-    width(width),
-    height(height),
-    title(title)
+Window::Window(uint32_t width, uint32_t height, const char* title)
 {
     glfwInit(); // Create a glfw instance so we can interact with the API
+    if (!glfwInit()) { // Ensure GLFW comes online
+        throw std::runtime_error("failed to initialize GLFW");
+    }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Tell glfw to not create an OpenGL context
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Disable resizing of window
 
     // Initialize the window; fourth param specifies monitor, next param is OpenGL specific so we don't care
-    window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    if (!window) { // Ensure window object is properly created
+        glfwTerminate();
+        throw std::runtime_error("failed to create GLFW window");
+    }
 }
 
 Window::~Window() {
