@@ -105,7 +105,7 @@ const vk::raii::Queue& Device::getGraphicsQueue() const {
     return graphicsQueue;
 }
 
-const uint32_t Device::getQueueIndex() const {
+uint32_t Device::getQueueIndex() const {
     return queueIndex;
 }
 

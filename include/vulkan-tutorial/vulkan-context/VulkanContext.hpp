@@ -10,11 +10,11 @@
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
 
-class Vulkan {
+class VulkanContext {
     // Public methods
     public:
         // Constructor declaration
-        explicit Vulkan(
+        explicit VulkanContext(
             const char *appName,
             const char *engine,
             const Window &window

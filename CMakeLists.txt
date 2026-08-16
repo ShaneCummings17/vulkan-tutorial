@@ -15,7 +15,7 @@ add_executable(${PROJECT_NAME}
     main.cpp
     src/app/Application.cpp
     src/window/Window.cpp
-    src/vulkan-api/Vulkan.cpp
+    src/vulkan-context/VulkanContext.cpp
     src/renderer/Renderer.cpp
     src/devices/Device.cpp
     src/swapchain/Swapchain.cpp

@@ -1,4 +1,4 @@
-#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
+#include <vulkan-tutorial/vulkan-context/VulkanContext.hpp>
 
 // Standard C++ Libraries
 #include <iostream>
@@ -36,7 +36,7 @@ namespace {
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
-Vulkan::Vulkan(
+VulkanContext::VulkanContext(
     const char *appName,
     const char *engine,
     const Window &window
@@ -60,12 +60,12 @@ Vulkan::Vulkan(
 
 /***** PUBLIC METHODS *****/
 // Expose the vulkan instance
-const vk::raii::Instance& Vulkan::getInstance() const {
+const vk::raii::Instance& VulkanContext::getInstance() const {
     return instance;
 }
 
 // Expose the vulkan surface
-const vk::raii::SurfaceKHR& Vulkan::getSurface() const {
+const vk::raii::SurfaceKHR& VulkanContext::getSurface() const {
     return surface;
 }
 
@@ -73,7 +73,7 @@ const vk::raii::SurfaceKHR& Vulkan::getSurface() const {
 
 /***** PRIVATE METHODS *****/
 // Create the Vulkan instance
-void Vulkan::createInstance(
+void VulkanContext::createInstance(
     const char *appName,
     const char *engine
 ) {
@@ -149,7 +149,7 @@ void Vulkan::createInstance(
     instance = vk::raii::Instance(context, createInfo);
 }
 
-std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
+std::vector<const char*> VulkanContext::getRequiredInstanceExtensions() { // Move required extensions into a separate helper function; extensions outside of glfw can be added to this helper function in future
     // Get the required global instance extensions from the window; basically tell Vulkan how to interface w/the window on the OS the binary is running on
     std::vector<const char *> extensions = window.getRequiredWindowExtensions();
 
@@ -162,7 +162,7 @@ std::vector<const char*> Vulkan::getRequiredInstanceExtensions() { // Move requi
 
 
 // Create debug hooks
-void Vulkan::setupDebugMessenger() {
+void VulkanContext::setupDebugMessenger() {
     if (!enableValidationLayers) return; // Checks if we're in debug mode; if we're not, don't even bother setting this up
 
     vk::DebugUtilsMessageSeverityFlagsEXT severityFlags( // How severe is the message? Only output debug messages for warning or above. Can add eVerbose and eInfo to increase error output.
@@ -189,7 +189,7 @@ void Vulkan::setupDebugMessenger() {
 
 
 // Initialize surface
-void Vulkan::initSurface() {
+void VulkanContext::initSurface() {
     // Grab the surface from the window object
     VkSurfaceKHR _surface = window.createSurface(*instance);
 

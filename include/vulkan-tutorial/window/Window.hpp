@@ -1,8 +1,5 @@
 #pragma once
 
-// Macros
-#define GLFW_INCLUDE_VULKAN
-
 // Standard C++ Libraries
 #include <cstdint>
 #include <vector>
@@ -43,7 +40,4 @@ class Window {
     // Private variables
     private:
         GLFWwindow* window = nullptr;
-        uint32_t width; // Window width
-        uint32_t height; // Window height
-        const char* title; // Window title
 };

@@ -22,7 +22,7 @@ class Device {
         const vk::raii::Queue& getGraphicsQueue() const;
 
         // Get the queueIndex
-        const uint32_t getQueueIndex() const;
+        uint32_t getQueueIndex() const;
 
     // Private methods
     private:

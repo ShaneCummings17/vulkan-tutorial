@@ -99,7 +99,7 @@ void Swapchain::createSwapchain(
 )
 {
     // Get the physical device
-    vk::raii::PhysicalDevice physicalDevice = device.getPhysicalDevice();
+    const auto& physicalDevice = device.getPhysicalDevice();
 
     // Get the surface capabilities (i.e., what does the window system allow you to do with a swapchain)
     vk::SurfaceCapabilitiesKHR capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);

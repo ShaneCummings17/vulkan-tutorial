@@ -1,12 +1,8 @@
 #pragma once
 
-// Standard C++ libraries
-#include <vector>
-#include <memory>
-
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
-#include <vulkan-tutorial/vulkan-api/Vulkan.hpp>
+#include <vulkan-tutorial/vulkan-context/VulkanContext.hpp>
 #include <vulkan-tutorial/devices/Device.hpp>
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
 #include <vulkan-tutorial/graphics-pipeline/GraphicsPipeline.hpp>
@@ -29,7 +25,7 @@ class Renderer {
     
     // Private variables
     private:
-        Vulkan vulkan;
+        VulkanContext vulkan;
         Device device;
         Swapchain swapchain;
         GraphicsPipeline graphicsPipeline;
