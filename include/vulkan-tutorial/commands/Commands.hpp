@@ -47,7 +47,7 @@ class Commands {
         void createCommandPool();
 
         // Create command buffer
-        void createCommandBuffer();
+        void createCommandBuffers();
 
 
     // Private variables

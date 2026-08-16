@@ -3,9 +3,18 @@
 // Standard C++ libraries
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
+
+// Global Config
+#include <vulkan-tutorial/core/Config.hpp>
+
+// Local variables
+namespace {
+    uint32_t frameIndex = 0; // Keep track of what frame we're on
+}
 
 
 
@@ -20,7 +29,7 @@ Renderer::Renderer(
     swapchain(device, vulkan.getSurface(), window),
     graphicsPipeline(device.getLogicalDevice(), swapchain.getSwapchainExtent(), swapchain.getSwapchainSurfaceFormat()),
     commands(device),
-    syncObjects(device.getLogicalDevice())
+    syncObjects(device.getLogicalDevice(), swapchain.getSwapchainImages())
 {};
 
 
@@ -34,26 +43,26 @@ void Renderer::waitIdle() {
 void Renderer::drawFrame() {
     // Wait for fence result 
     auto fenceResult = device.getLogicalDevice().waitForFences(
-        *syncObjects.getDrawFence(),                                         // Fence result to wait for
-        vk::True,                                           // If true, wait for all fences
-        UINT64_MAX                                          // Disable timeout
+        *syncObjects.getInFlightFences()[frameIndex],                       // Fence result to wait for
+        vk::True,                                                           // If true, wait for all fences
+        UINT64_MAX                                                          // Disable timeout
     );
     if (fenceResult != vk::Result::eSuccess) {
         throw std::runtime_error("failed to wait for fence!");
     };
 
     // Reset fence after result
-    device.getLogicalDevice().resetFences(*syncObjects.getDrawFence());
+    commands.getCommandBuffers()[frameIndex].reset();
 
     // Grab an image from the framebuffer after the previous frame has finished
     auto [result, imageIndex] = swapchain.getSwapchain().acquireNextImage(
-        UINT64_MAX,                                         // Disable timeout for image to become available
-        *syncObjects.getPresentCompleteSemaphore(),                          // Signal the presentCompleteSemaphore after we're finished using the image
-        nullptr                                             // Don't bother signaling a fence
+        UINT64_MAX,                                                         // Disable timeout for image to become available
+        *syncObjects.getPresentCompleteSemaphores()[frameIndex],            // Signal the presentCompleteSemaphore after we're finished using the image
+        nullptr                                                             // Don't bother signaling a fence
     );
 
-    // Record the commands we want to the buffer
-    recordCommandBuffer(commands.getCommandBuffer(0), imageIndex);
+    // Record all the commands we want sent to the buffer
+    recordCommandBuffer(commands.getCommandBuffer(frameIndex), imageIndex);
 
     // Submit the command buffer to the GPU!
     vk::PipelineStageFlags waitDestinationStageMask(
@@ -62,27 +71,30 @@ void Renderer::drawFrame() {
 
     const vk::SubmitInfo submitInfo{
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*syncObjects.getPresentCompleteSemaphore(),
+        .pWaitSemaphores = &*syncObjects.getPresentCompleteSemaphores()[frameIndex],
         .pWaitDstStageMask = &waitDestinationStageMask,
         .commandBufferCount = 1,
-        .pCommandBuffers = &*commands.getCommandBuffer(0),
+        .pCommandBuffers = &*commands.getCommandBuffer(frameIndex),
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &*syncObjects.getRenderFinishedSemaphore()
+        .pSignalSemaphores = &*syncObjects.getRenderFinishedSemaphores()[frameIndex]
     };
 
     const auto &queue = device.getGraphicsQueue();
-    queue.submit(submitInfo, *syncObjects.getDrawFence());
+    queue.submit(submitInfo, *syncObjects.getInFlightFences()[frameIndex]);
 
     // Submit the result back to the swapchain and have it eventually show up on the screen
     const vk::PresentInfoKHR presentInfoKHR{
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*syncObjects.getRenderFinishedSemaphore(),
+        .pWaitSemaphores = &*syncObjects.getRenderFinishedSemaphores()[frameIndex],
         .swapchainCount = 1,
         .pSwapchains = &*swapchain.getSwapchain(),
         .pImageIndices = &imageIndex
     };
 
     result = queue.presentKHR(presentInfoKHR);
+
+    // Advance to the next frame
+    frameIndex = (frameIndex + 1) % Config::MAX_FRAMES_IN_FLIGHT;
     
 }
 
@@ -114,7 +126,7 @@ void Renderer::recordCommandBuffer(
     );
 
 
-    // STEP #3: Set up the color attachment
+    // STEP #3: Set up the color attachment information
     vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
     vk::RenderingAttachmentInfo attachmentInfo = {
         .imageView = swapchain.getSwapchainImageViews()[imageIndex],    // The image view to render to
@@ -127,7 +139,7 @@ void Renderer::recordCommandBuffer(
 
     // STEP #4: Setup the rendering info
     vk::RenderingInfo renderingInfo = {
-        .renderArea = {                                                 // Define size of the render area
+        .renderArea = {                                                 // Define size of the render area; we're doing size of the whole screen
             .offset = {0, 0},
             .extent = swapchain.getSwapchainExtent()
         },
@@ -146,7 +158,13 @@ void Renderer::recordCommandBuffer(
 
 
     // STEP #7: Set values for dynamic rendering
-    commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.getSwapchainExtent().width), static_cast<float>(swapchain.getSwapchainExtent().height), 0.0f, 1.0f));
+    commandBuffer.setViewport(
+        0,
+        vk::Viewport(0.0f, 0.0f, static_cast<float>(swapchain.getSwapchainExtent().width),
+        static_cast<float>(swapchain.getSwapchainExtent().height),
+        0.0f,
+        1.0f
+    ));
     commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.getSwapchainExtent()));
 
 
@@ -158,7 +176,7 @@ void Renderer::recordCommandBuffer(
     commandBuffer.endRendering();
 
 
-    // STEP #10: Transition the image layourt BACK to vk::ImageLayout::ePresentSrcKHR so it can be presented to the screen
+    // STEP #10: Transition the image layout to vk::ImageLayout::ePresentSrcKHR so it can be presented to the screen
     commands.transitionImageLayout(
         image,
         vk::ImageLayout::eColorAttachmentOptimal,
