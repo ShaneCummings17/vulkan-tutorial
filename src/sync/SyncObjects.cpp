@@ -40,12 +40,12 @@ void SyncObjects::createSyncObjects(
     // Ensure the everything is empty; don't want to create sync objects if others already exist!
     assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty());
 
-    // Add all the finished semaphores to the logical device (in order)
+    // Create one renderFinished semaphore for every image in the swapchain
     for (size_t i = 0; i < swapchainImages.size(); i++) {
         renderFinishedSemaphores.emplace_back(logicalDevice, vk::SemaphoreCreateInfo());;
     };
 
-    // Begin processing new semaphores and fences
+    // Create CPU pacing objects based on MAX_FRAMES_IN_FLIGHT
     for (size_t i = 0; i < Config::MAX_FRAMES_IN_FLIGHT; i++) {
         presentCompleteSemaphores.emplace_back(logicalDevice, vk::SemaphoreCreateInfo());
         inFlightFences.emplace_back(logicalDevice, vk::FenceCreateInfo{

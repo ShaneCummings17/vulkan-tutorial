@@ -52,7 +52,7 @@ void Renderer::drawFrame() {
     };
 
     // Reset fence after result
-    commands.getCommandBuffers()[frameIndex].reset();
+    device.getLogicalDevice().resetFences(*syncObjects.getInFlightFences()[frameIndex]);;
 
     // Grab an image from the framebuffer after the previous frame has finished
     auto [result, imageIndex] = swapchain.getSwapchain().acquireNextImage(
@@ -76,7 +76,7 @@ void Renderer::drawFrame() {
         .commandBufferCount = 1,
         .pCommandBuffers = &*commands.getCommandBuffer(frameIndex),
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &*syncObjects.getRenderFinishedSemaphores()[frameIndex]
+        .pSignalSemaphores = &*syncObjects.getRenderFinishedSemaphores()[imageIndex]
     };
 
     const auto &queue = device.getGraphicsQueue();
@@ -85,7 +85,7 @@ void Renderer::drawFrame() {
     // Submit the result back to the swapchain and have it eventually show up on the screen
     const vk::PresentInfoKHR presentInfoKHR{
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &*syncObjects.getRenderFinishedSemaphores()[frameIndex],
+        .pWaitSemaphores = &*syncObjects.getRenderFinishedSemaphores()[imageIndex],
         .swapchainCount = 1,
         .pSwapchains = &*swapchain.getSwapchain(),
         .pImageIndices = &imageIndex
