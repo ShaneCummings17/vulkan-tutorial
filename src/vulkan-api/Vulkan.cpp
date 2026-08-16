@@ -61,7 +61,7 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex());
 
     // Create the sync objects
-    syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice(), commands->getCommandBuffer(0), swapchain->getSwapchain());
+    syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice());
 }
 
 Vulkan::~Vulkan() {};

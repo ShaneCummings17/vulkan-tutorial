@@ -8,13 +8,11 @@ class SyncObjects {
     public:
         // Constructor declaration
         SyncObjects(
-            const vk::raii::Device &logicalDevice,
-            const vk::raii::CommandBuffer& commandBuffer,
-            const vk::raii::SwapchainKHR& swapchain
+            const vk::raii::Device& logicalDevice
         );
 
         // Destructor declaration
-        ~SyncObjects();
+        ~SyncObjects() = default;
 
         // Get a reference to the drawFence object
         const vk::raii::Fence& getDrawFence() const;
@@ -29,7 +27,7 @@ class SyncObjects {
     // Private methods
     private:
         // Create the sync objects
-        void createSyncObjects(const vk::raii::Device &logicalDevice);
+        void createSyncObjects(const vk::raii::Device& logicalDevice);
 
 
     // Private variables
