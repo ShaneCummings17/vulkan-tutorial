@@ -90,7 +90,6 @@ endfunction()
 
 add_slang_shader_target(Shaders
     SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vertex-shader.slang
-        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fragment-shader.slang
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shaders.slang
 )
 add_dependencies(${PROJECT_NAME} Shaders)
