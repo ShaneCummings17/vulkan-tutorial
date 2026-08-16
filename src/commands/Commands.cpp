@@ -3,6 +3,10 @@
 // Standard C++ Libraries
 #include <utility>
 
+// Global Configs
+#include <vulkan-tutorial/core/Config.hpp>
+
+
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Commands::Commands(
@@ -10,7 +14,7 @@ Commands::Commands(
 ) : device(device)
 {
     createCommandPool();
-    createCommandBuffer();
+    createCommandBuffers();
 };
 
 
@@ -48,35 +52,29 @@ void Commands::createCommandPool() {
 // Define command buffer
 // CBs are useful as we can submit all commands to Vulkan at once; less data transfers occurring == more efficiency
 // Also enables multi-threading for command recording
-void Commands::createCommandBuffer() {
-    // Define the allocation info for the command buffer
+void Commands::createCommandBuffers() {
+    // Define the allocation info for the command bufferss
     // Memory will be automatically freed when pool is destroyed, so we don't need explicit cleanup
     vk::CommandBufferAllocateInfo allocInfo{
         .commandPool = commandPool,                                         // The command pool from which to derive the memory for the buffer
         .level = vk::CommandBufferLevel::ePrimary,                          // Are allocated CBs primary or secondary? Primary can be submitted to queue, but cannot be called by other buffers. Secondary is opposite.
-        .commandBufferCount = 1                                             // Number of command buffers being allocated
+        .commandBufferCount = Config::MAX_FRAMES_IN_FLIGHT                  // Number of command buffers being allocated
     };
 
-    // Allocate a new command buffer
-    auto commandBuffer = vk::raii::CommandBuffers(device.getLogicalDevice(), allocInfo);
-
-    // Insert the command buffer into the command_buffers object
-    commandBuffers.insert(
-        commandBuffers.end(),
-        std::make_move_iterator(commandBuffer.begin()),
-        std::make_move_iterator(commandBuffer.end())
-    );
+    // Allocate the new command buffers
+    commandBuffers = vk::raii::CommandBuffers(device.getLogicalDevice(), allocInfo);
 }
 
+// Transition the image from one layout to another
 void Commands::transitionImageLayout(
-    vk::Image image,                                                    // The index of the image layout to modify
+    vk::Image image,                                                    // The image we're going to modify
     vk::ImageLayout oldLayout,                                          // The current layout state
     vk::ImageLayout newLayout,                                          // The desired layout state
     vk::AccessFlags2 srcAccessMask,                                     // The memory accesses that occurred before the transition so GPU can flush caches
     vk::AccessFlags2 dstAccessMask,                                     // The memory accesses that occurred after the transition
     vk::PipelineStageFlags2 srcStageMask,                               // The pipeline stages that must finish executing before the transition can happen
     vk::PipelineStageFlags2 dstStageMask,                               // The pipeline stages that must wait to execute until the transition occurs
-    const vk::raii::CommandBuffer &commandBuffer                       // The command buffer we're transitioning the images in
+    const vk::raii::CommandBuffer &commandBuffer                        // The command buffer we're transitioning the images in
 ) const {
     // Initiate a Vulkan 2.0 structure to tell the GPU that a specific image's layout and access permissions are changing
     vk::ImageMemoryBarrier2 barrier = {
