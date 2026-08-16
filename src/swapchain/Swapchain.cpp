@@ -61,9 +61,11 @@ Swapchain::Swapchain(
     const Device& device,
     const vk::raii::SurfaceKHR& surface,
     const Window& window
-) : device(device)
+) : device(device),
+    surface(surface),
+    window(window)
 {
-    createSwapchain(surface, window);
+    createSwapchain();
     createImageViews();
 }
 
@@ -90,13 +92,25 @@ const std::vector<vk::raii::ImageView>& Swapchain::getSwapchainImageViews() cons
     return swapchainImageViews;
 }
 
+void Swapchain::recreateSwapchain() {
+    // Wait for the framebuffer size to be known
+    window.waitUntilFramebufferRestored();
+
+    // Wait for the logical device to be doing nothing
+    device.getLogicalDevice().waitIdle();
+
+    // Cleanup the swapchain
+    cleanupSwapchain();
+
+    // Recreate the swapchain and image views
+    createSwapchain();
+    createImageViews();
+}
+
 
 
 /***** PRIVATE METHODS *****/
-void Swapchain::createSwapchain(
-    const vk::raii::SurfaceKHR &surface,
-    const Window &window
-)
+void Swapchain::createSwapchain()
 {
     // Get the physical device
     const auto& physicalDevice = device.getPhysicalDevice();
@@ -164,4 +178,9 @@ void Swapchain::createImageViews() {
         imageViewCreateInfo.image = image;
         swapchainImageViews.emplace_back(device.getLogicalDevice(), imageViewCreateInfo); // Add object to the end of the vector
     };
+}
+
+void Swapchain::cleanupSwapchain() {
+    swapchainImageViews.clear();
+    swapchain = nullptr;
 }

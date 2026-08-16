@@ -1,8 +1,8 @@
 #pragma once
 
 // Internal libraries
-#include <vulkan-tutorial/window/Window.hpp>
 #include <vulkan-tutorial/devices/Device.hpp>
+#include <vulkan-tutorial/window/Window.hpp>
 
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
@@ -32,16 +32,19 @@ class Swapchain {
         // Get the swapchain image views
         const std::vector<vk::raii::ImageView>& getSwapchainImageViews() const;
 
+        // Recreate the swapchain (allows resizing of window)
+        void recreateSwapchain();
+
     // Private methods
     private:
-        // Create the logical device
-        void createSwapchain(
-            const vk::raii::SurfaceKHR &surface,
-            const Window &window
-        );
+        // Create the swapchain
+        void createSwapchain();
 
         // Create the image views
         void createImageViews();
+
+        // Cleanup the swapchain (allows resizing of window)
+        void cleanupSwapchain();
 
 
     // Private variables
@@ -52,4 +55,6 @@ class Swapchain {
         vk::SurfaceFormatKHR swapchainSurfaceFormat; // The format that pixels are laid out + the color space
         std::vector<vk::raii::ImageView> swapchainImageViews; // A vector storing image views (i.e., how to access the image, which part to access, if it should be treated as a 2D depth texture, etc.)
         const Device& device; // The device the swapchain is attached to
+        const Window& window; // The window the swapchain is rendering to
+        const vk::raii::SurfaceKHR& surface; // The surface the swapchain is rendering to
 };

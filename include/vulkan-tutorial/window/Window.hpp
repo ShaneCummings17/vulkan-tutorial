@@ -36,8 +36,24 @@ class Window {
 
         // Choose the swap extent (resolution) that the Swapchain will use
         vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities) const;
+
+        // Wait until the framebuffer is restored
+        void waitUntilFramebufferRestored() const;
+        
+        // Was the framebuffer resized?
+        bool wasFramebufferResized() const;
+
+        // Reset the framebufferResized variable
+        void resetFramebufferResized();
+
+    
+    // Private methods
+    private:
+        static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
     
     // Private variables
     private:
         GLFWwindow* window = nullptr;
+        bool framebufferResized = false; // Has a resize occurred?
 };
