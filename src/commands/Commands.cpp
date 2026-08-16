@@ -14,8 +14,6 @@ Commands::Commands(
     createCommandBuffer();
 };
 
-Commands::~Commands() {}
-
 
 
 /**** PUBLIC METHODS *****/

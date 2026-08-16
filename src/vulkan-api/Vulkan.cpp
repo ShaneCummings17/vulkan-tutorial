@@ -64,8 +64,6 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice());
 }
 
-Vulkan::~Vulkan() {};
-
 
 
 /***** PUBLIC METHODS *****/

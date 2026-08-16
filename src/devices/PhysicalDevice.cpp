@@ -80,8 +80,6 @@ PhysicalDevice::PhysicalDevice(const vk::raii::Instance &instance) {
     pickPhysicalDevice(instance);
 }
 
-PhysicalDevice::~PhysicalDevice() {}
-
 
 /***** PUBLIC METHODS *****/
 const vk::raii::PhysicalDevice& PhysicalDevice::getPhysicalDevice() const {

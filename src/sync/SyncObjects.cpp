@@ -9,8 +9,6 @@ SyncObjects::SyncObjects(
     createSyncObjects(logicalDevice);
 }
 
-SyncObjects::~SyncObjects() {}
-
 
 
 /***** PUBLIC METHODS *****/

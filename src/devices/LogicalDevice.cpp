@@ -16,8 +16,6 @@ LogicalDevice::LogicalDevice(const vk::raii::PhysicalDevice &physicalDevice, vk:
     createLogicalDevice(physicalDevice, surface);
 }
 
-LogicalDevice::~LogicalDevice() {}
-
 
 /***** PUBLIC METHODS *****/
 const vk::raii::Device& LogicalDevice::getLogicalDevice() const {

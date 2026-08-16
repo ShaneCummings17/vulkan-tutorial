@@ -70,8 +70,6 @@ Swapchain::Swapchain(
     createImageViews();
 }
 
-Swapchain::~Swapchain() {}
-
 
 
 /***** PUBLIC METHODS *****/

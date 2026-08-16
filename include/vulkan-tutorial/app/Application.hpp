@@ -10,9 +10,6 @@ class Application {
         // Constructor declaration
         Application();
 
-        // Destructor declaration
-        ~Application();
-
         // Run the application
         void run();
 

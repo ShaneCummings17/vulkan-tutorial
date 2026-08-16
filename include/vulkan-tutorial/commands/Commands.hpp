@@ -19,9 +19,6 @@ class Commands {
             uint32_t queueIndex
         );
 
-        // Destructor declaration
-        ~Commands();
-
         // Get command pool
         const vk::raii::CommandPool& getCommandPool() const;
 

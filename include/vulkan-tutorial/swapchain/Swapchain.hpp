@@ -18,9 +18,6 @@ class Swapchain {
             const vk::raii::Device &logicalDevice
         );
 
-        // Destructor declaration
-        ~Swapchain();
-
         // Get the swapchain object
         const vk::raii::SwapchainKHR& getSwapchain() const;
 

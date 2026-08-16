@@ -9,9 +9,6 @@ class PhysicalDevice {
         // Constructor declaration
         explicit PhysicalDevice(const vk::raii::Instance &instance);
 
-        // Destructor declaration
-        ~PhysicalDevice();
-
         // Get the current PhysicalDevice object
         const vk::raii::PhysicalDevice& getPhysicalDevice() const;
 

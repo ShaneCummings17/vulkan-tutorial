@@ -12,8 +12,6 @@ Application::Application() :
     vulkan("Hello Triangle", "No Engine", window)
 {}
 
-Application::~Application() {}
-
 
 
 /***** PUBLIC METHODS *****/

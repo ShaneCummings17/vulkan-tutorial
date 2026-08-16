@@ -12,9 +12,6 @@ class LogicalDevice {
         // Constructor declaration
         explicit LogicalDevice(const vk::raii::PhysicalDevice &physicalDevice, vk::raii::SurfaceKHR &surface);
 
-        // Destructor declaration
-        ~LogicalDevice();
-
         // Get the logical device object
         const vk::raii::Device& getLogicalDevice() const;
 

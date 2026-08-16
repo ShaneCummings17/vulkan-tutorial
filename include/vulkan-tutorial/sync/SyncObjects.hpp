@@ -11,9 +11,6 @@ class SyncObjects {
             const vk::raii::Device& logicalDevice
         );
 
-        // Destructor declaration
-        ~SyncObjects() = default;
-
         // Get a reference to the drawFence object
         const vk::raii::Fence& getDrawFence() const;
 

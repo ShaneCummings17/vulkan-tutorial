@@ -26,9 +26,6 @@ class Vulkan {
             const Window &window
         );
 
-        // Destructor declaration
-        ~Vulkan();
-
         // Expose the logical device object
         const LogicalDevice& getLogicalDeviceObject() const;
 
