@@ -94,4 +94,5 @@ add_slang_shader_target(Shaders
 )
 add_dependencies(${PROJECT_NAME} Shaders)
 
+# Macros for compilation
 add_definitions(-DVULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS)
