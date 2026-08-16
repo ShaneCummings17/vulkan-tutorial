@@ -6,11 +6,10 @@
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Commands::Commands(
-    const vk::raii::Device &logicalDevice,
-    uint32_t queueIndex
-) : logicalDevice(logicalDevice)
+    const Device &device
+) : device(device)
 {
-    createCommandPool(queueIndex);
+    createCommandPool();
     createCommandBuffer();
 };
 
@@ -122,15 +121,15 @@ void Commands::recordCommandBuffer(size_t commandBufferIndex, uint32_t imageInde
 // Define command pool
 // CPs manage the memory that is used to store the buffers
 // CBs are allocated from CPs
-void Commands::createCommandPool(uint32_t queueIndex) {
+void Commands::createCommandPool() {
     // Define the configuration info for the command pool
     vk::CommandPoolCreateInfo poolInfo{
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,        // Allow command buffers to be rerecorded individually; without this flag they all have to be reset together
-        .queueFamilyIndex = queueIndex                                      // The device queue the commands will be submitted to
+        .queueFamilyIndex = device.getQueueIndex()                                      // The device queue the commands will be submitted to
     };
 
     // Create the command pool and tie it to the logical Device
-    commandPool = vk::raii::CommandPool(logicalDevice, poolInfo);
+    commandPool = vk::raii::CommandPool(device.getLogicalDevice(), poolInfo);
 }
 
 // Define command buffer
@@ -146,7 +145,7 @@ void Commands::createCommandBuffer() {
     };
 
     // Allocate a new command buffer
-    auto commandBuffer = vk::raii::CommandBuffers(logicalDevice, allocInfo);
+    auto commandBuffer = vk::raii::CommandBuffers(device.getLogicalDevice(), allocInfo);
 
     // Insert the command buffer into the command_buffers object
     commandBuffers.insert(
