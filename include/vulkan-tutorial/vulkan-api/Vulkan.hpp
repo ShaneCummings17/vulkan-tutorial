@@ -6,8 +6,7 @@
 
 // Internal libraries
 #include <vulkan-tutorial/window/Window.hpp>
-#include <vulkan-tutorial/devices/PhysicalDevice.hpp>
-#include <vulkan-tutorial/devices/LogicalDevice.hpp>
+#include <vulkan-tutorial/devices/Device.hpp>
 #include <vulkan-tutorial/swapchain/Swapchain.hpp>
 #include <vulkan-tutorial/graphics-pipeline/GraphicsPipeline.hpp>
 #include <vulkan-tutorial/commands/Commands.hpp>
@@ -27,7 +26,7 @@ class Vulkan {
         );
 
         // Expose the logical device object
-        const LogicalDevice& getLogicalDeviceObject() const;
+        Device& getDeviceObject() const;
 
         // Expose the sync objects
         const SyncObjects& getSyncObjects() const;
@@ -68,8 +67,7 @@ class Vulkan {
         vk::raii::Instance instance = nullptr; // Vulkan instance used to call API
         vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr; // Class member for the debug messenger handle
         vk::raii::SurfaceKHR surface = nullptr; // The surface to which graphics output will be rendered; connects the Vulkan API to the window
-        std::unique_ptr<PhysicalDevice> physicalDevice; // The hardware the program is running against
-        std::unique_ptr<LogicalDevice> logicalDevice; // The logical device the program is running on; i.e., the application's interface to the hardware
+        std::unique_ptr<Device> device; // The hardware the program is running against
         std::unique_ptr<Swapchain> swapchain; // The swapchain used to render frames
         std::unique_ptr<GraphicsPipeline> graphicsPipeline; // The graphics pipeline
         std::unique_ptr<Commands> commands; // The commands object containing both the commandPool and the commandBuffer

@@ -45,31 +45,28 @@ Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
     setupDebugMessenger(); // Setup debug validation layers
     initSurface(); // Initialize the surface the Vulkan API will be rendering to
 
-    // Pick the Physical Device
-    physicalDevice = std::make_unique<PhysicalDevice>(instance);
-
-    // Create the Logical Device
-    logicalDevice = std::make_unique<LogicalDevice>(physicalDevice->getPhysicalDevice(), surface);
+    // Create the devices
+    device = std::make_unique<Device>(&instance, &surface);
 
     // Create the Swapchain + Image views
-    swapchain = std::make_unique<Swapchain>(physicalDevice->getPhysicalDevice(), surface, window, logicalDevice->getLogicalDevice());
+    swapchain = std::make_unique<Swapchain>(device->getPhysicalDevice(), surface, window, device->getLogicalDevice());
 
     // Create the graphics pipeline
-    graphicsPipeline = std::make_unique<GraphicsPipeline>(logicalDevice->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
+    graphicsPipeline = std::make_unique<GraphicsPipeline>(device->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
 
     // Create the command pool and buffer
-    commands = std::make_unique<Commands>(logicalDevice->getLogicalDevice(), logicalDevice->getQueueIndex());
+    commands = std::make_unique<Commands>(device->getLogicalDevice(), device->getQueueIndex());
 
     // Create the sync objects
-    syncObjects = std::make_unique<SyncObjects>(logicalDevice->getLogicalDevice());
+    syncObjects = std::make_unique<SyncObjects>(device->getLogicalDevice());
 }
 
 
 
 /***** PUBLIC METHODS *****/
 // Expose the logical device
-const LogicalDevice& Vulkan::getLogicalDeviceObject() const {
-    return *logicalDevice;
+Device& Vulkan::getDeviceObject() const {
+    return *device;
 }
 
 // Expose the syncObjects
