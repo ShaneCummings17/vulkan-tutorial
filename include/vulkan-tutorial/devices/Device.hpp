@@ -9,7 +9,7 @@ class Device {
         // Constructor declaration
         explicit Device(
             const vk::raii::Instance& instance,
-            vk::raii::SurfaceKHR& surface
+            const vk::raii::SurfaceKHR& surface
         );
 
         // Get the physical device object

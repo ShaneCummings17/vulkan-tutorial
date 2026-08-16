@@ -36,64 +36,47 @@ namespace {
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
-Vulkan::Vulkan(const char *appName, const char *engine, const Window &window) :
-    appName(appName),
-    engine(engine),
+Vulkan::Vulkan(
+    const char *appName,
+    const char *engine,
+    const Window &window
+) :
     window(window)
 {
-    createInstance(); // Create Vulkan API instance
-    setupDebugMessenger(); // Setup debug validation layers
-    initSurface(); // Initialize the surface the Vulkan API will be rendering to
+    // Create Vulkan API instance
+    createInstance(
+        appName,
+        engine
+    );
 
-    // Create the devices
-    device = std::make_unique<Device>(&instance, &surface);
+    // Setup debug validation layers
+    setupDebugMessenger();
 
-    // Create the Swapchain + Image views
-    swapchain = std::make_unique<Swapchain>(device, surface, window);
-
-    // Create the graphics pipeline
-    graphicsPipeline = std::make_unique<GraphicsPipeline>(device->getLogicalDevice(), swapchain->getSwapchainExtent(), swapchain->getSwapchainSurfaceFormat());
-
-    // Create the command pool and buffer
-    commands = std::make_unique<Commands>(device->getLogicalDevice(), device->getQueueIndex());
-
-    // Create the sync objects
-    syncObjects = std::make_unique<SyncObjects>(device->getLogicalDevice());
+    // Initialize the surface the Vulkan API will be rendering to
+    initSurface();
 }
 
 
 
 /***** PUBLIC METHODS *****/
-// Expose the logical device
-Device& Vulkan::getDeviceObject() const {
-    return *device;
+// Expose the vulkan instance
+const vk::raii::Instance& Vulkan::getInstance() const {
+    return instance;
 }
 
-// Expose the syncObjects
-const SyncObjects& Vulkan::getSyncObjects() const {
-    return *syncObjects;
-}
-
-// Expose the swapchain object
-const Swapchain& Vulkan::getSwapchainObject() const {
-    return *swapchain;
-}
-
-// Expose the commands object
-const Commands& Vulkan::getCommandsObject() const {
-    return *commands;
-}
-
-// Expose the graphics pipeline object
-const GraphicsPipeline& Vulkan::getGraphicsPipelineObject() const {
-    return *graphicsPipeline;
+// Expose the vulkan surface
+const vk::raii::SurfaceKHR& Vulkan::getSurface() const {
+    return surface;
 }
 
 
 
 /***** PRIVATE METHODS *****/
 // Create the Vulkan instance
-void Vulkan::createInstance() {
+void Vulkan::createInstance(
+    const char *appName,
+    const char *engine
+) {
     // Define info about the application (Name, App Version, Engine, Engine Version, Vulkan API Version)
     const vk::ApplicationInfo appInfo{
         .pApplicationName = appName,

@@ -84,7 +84,7 @@ namespace {
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
 Device::Device(
     const vk::raii::Instance &instance,
-    vk::raii::SurfaceKHR& surface
+    const vk::raii::SurfaceKHR& surface
 ) {
     pickPhysicalDevice(instance);
     createLogicalDevice(surface);
