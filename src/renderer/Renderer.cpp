@@ -4,12 +4,23 @@
 #include <vector>
 #include <memory>
 
+// Internal Libraries
+#include <vulkan-tutorial/buffers/VertexDefinition.hpp>
+
 // External Libraries
 #include <vulkan/vulkan_raii.hpp>
 
 // Global Config
 #include <vulkan-tutorial/core/Config.hpp>
 
+// Local variables
+namespace {
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
+}
 
 
 /***** CONSTRUCTOR AND DESTRUCTOR *****/
@@ -24,7 +35,8 @@ Renderer::Renderer(
     graphicsPipeline(device.getLogicalDevice(), swapchain.getSwapchainExtent(), swapchain.getSwapchainSurfaceFormat()),
     commands(device),
     syncObjects(device.getLogicalDevice(), swapchain.getSwapchainImages()),
-    window(window)
+    window(window),
+    vertexBuffer(device, vertices)
 {};
 
 
@@ -183,15 +195,19 @@ void Renderer::recordCommandBuffer(
     commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain.getSwapchainExtent()));
 
 
-    // STEP #8: Issue the draw commmand for the triangle!
+    // STEP #8: Bind the vertex buffer
+    commandBuffer.bindVertexBuffers(0, vertexBuffer.getBuffer(), {0});
+
+
+    // STEP #9: Issue the draw commmand for the triangle!
     commandBuffer.draw(3, 1, 0, 0);
 
 
-    // STEP #9: End rendering
+    // STEP #10: End rendering
     commandBuffer.endRendering();
 
 
-    // STEP #10: Transition the image layout to vk::ImageLayout::ePresentSrcKHR so it can be presented to the screen
+    // STEP #11: Transition the image layout to vk::ImageLayout::ePresentSrcKHR so it can be presented to the screen
     commands.transitionImageLayout(
         image,
         vk::ImageLayout::eColorAttachmentOptimal,
@@ -204,6 +220,6 @@ void Renderer::recordCommandBuffer(
     );
 
 
-    // STEP #11: Finish recording the command buffer
+    // STEP #12: Finish recording the command buffer
     commandBuffer.end();
 };

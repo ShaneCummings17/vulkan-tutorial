@@ -22,11 +22,13 @@ add_executable(${PROJECT_NAME}
     src/graphics-pipeline/GraphicsPipeline.cpp
     src/commands/Commands.cpp
     src/sync/SyncObjects.cpp
+    src/buffers/Buffer.cpp
 )
 
 # External dependencies
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 # Internal headers
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -41,6 +43,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Vulkan::Vulkan
         glfw
+        glm::glm
 )
 
 # Shaders

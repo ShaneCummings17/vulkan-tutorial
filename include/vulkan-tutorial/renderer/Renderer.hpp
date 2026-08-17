@@ -11,6 +11,7 @@
 #include <vulkan-tutorial/graphics-pipeline/GraphicsPipeline.hpp>
 #include <vulkan-tutorial/commands/Commands.hpp>
 #include <vulkan-tutorial/sync/SyncObjects.hpp>
+#include <vulkan-tutorial/buffers/Buffer.hpp>
 
 class Renderer {
     // Public methods
@@ -43,6 +44,9 @@ class Renderer {
         Commands commands;
         SyncObjects syncObjects;
         Window& window;
+        Buffer vertexBuffer;
 
         uint32_t frameIndex = 0; // The frame we're on
+
+        
 };
