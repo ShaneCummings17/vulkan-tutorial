@@ -34,7 +34,7 @@ const vk::raii::CommandBuffer& Commands::getCommandBuffer(size_t index) const {
 
 
 
-/**** Private METHODS *****/
+/**** PRIVATE METHODS *****/
 // Define command pool
 // CPs manage the memory that is used to store the buffers
 // CBs are allocated from CPs

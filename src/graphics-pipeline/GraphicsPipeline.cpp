@@ -7,6 +7,9 @@
 #include <string>
 #include <format>
 
+// Internal libraries
+#include <vulkan-tutorial/buffers/VertexDefinition.hpp>
+
 // Local helper functions
 namespace {
     // Read binary data from files into memory
@@ -114,7 +117,14 @@ void GraphicsPipeline::createGraphicsPipeline(
 
     // STEP #2: Define the FIXED-FUNCTION pipeline stages
     // Describe the format of the vertex data that will be passed to the vertex shader
-    vk::PipelineVertexInputStateCreateInfo vertexInputInfo; // Ignore for now as we aren't using a true vertex buffer
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
+        .vertexBindingDescriptionCount = 1,
+        .pVertexBindingDescriptions = &bindingDescription,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+        .pVertexAttributeDescriptions = attributeDescriptions.data()
+    };
 
     // Define the input assembly (what kind of geometry will be drawn and if primitive restart should be enabled)
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
